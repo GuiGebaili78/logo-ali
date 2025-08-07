@@ -1,0 +1,1708 @@
+Estrutura de pastas e arquivos com conteúdo:
+--- Caminho: .env.development ---
+
+--- Caminho: .git ---
+--- Caminho: .git/COMMIT_EDITMSG ---
+
+--- Caminho: .git/config ---
+
+--- Caminho: .git/description ---
+
+--- Caminho: .git/HEAD ---
+
+--- Caminho: .git/hooks ---
+--- Caminho: .git/hooks/applypatch-msg.sample ---
+
+--- Caminho: .git/hooks/commit-msg.sample ---
+
+--- Caminho: .git/hooks/fsmonitor-watchman.sample ---
+
+--- Caminho: .git/hooks/post-update.sample ---
+
+--- Caminho: .git/hooks/pre-applypatch.sample ---
+
+--- Caminho: .git/hooks/pre-commit.sample ---
+
+--- Caminho: .git/hooks/pre-merge-commit.sample ---
+
+--- Caminho: .git/hooks/pre-push.sample ---
+
+--- Caminho: .git/hooks/pre-rebase.sample ---
+
+--- Caminho: .git/hooks/pre-receive.sample ---
+
+--- Caminho: .git/hooks/prepare-commit-msg.sample ---
+
+--- Caminho: .git/hooks/push-to-checkout.sample ---
+
+--- Caminho: .git/hooks/update.sample ---
+
+
+--- Caminho: .git/index ---
+
+--- Caminho: .git/info ---
+--- Caminho: .git/info/exclude ---
+
+
+--- Caminho: .git/logs ---
+--- Caminho: .git/logs/HEAD ---
+
+--- Caminho: .git/logs/refs ---
+--- Caminho: .git/logs/refs/heads ---
+--- Caminho: .git/logs/refs/heads/main ---
+
+
+--- Caminho: .git/logs/refs/remotes ---
+--- Caminho: .git/logs/refs/remotes/origin ---
+
+
+
+
+--- Caminho: .git/objects ---
+--- Caminho: .git/objects/58 ---
+--- Caminho: .git/objects/58/d9a72b78cb3ba29b76c1b0ef68d2223778d358 ---
+
+
+--- Caminho: .git/objects/cf ---
+--- Caminho: .git/objects/cf/9dc441475e04f3b88ba5431f5267baca6ff2de ---
+
+
+--- Caminho: .git/objects/ef ---
+--- Caminho: .git/objects/ef/7273748ef1c7110d27850aff374e7736c4bb87 ---
+
+
+--- Caminho: .git/objects/info ---
+
+--- Caminho: .git/objects/pack ---
+
+
+--- Caminho: .git/refs ---
+--- Caminho: .git/refs/heads ---
+--- Caminho: .git/refs/heads/main ---
+
+
+--- Caminho: .git/refs/remotes ---
+--- Caminho: .git/refs/remotes/origin ---
+--- Caminho: .git/refs/remotes/origin/main ---
+
+
+
+--- Caminho: .git/refs/tags ---
+
+
+
+--- Caminho: .gitignore ---
+```plaintext
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+```
+
+--- Caminho: .prettierignore ---
+```plaintext
+.next
+```
+
+--- Caminho: .vscode ---
+--- Caminho: .vscode/settings.json ---
+```json
+{
+  //"window.zoomLevel": 1,
+  // "breadcrumbs.enabled": false,
+  // "editor.fontSize": 14,
+  // "debug.console.fontSize": 14,
+  // "terminal.integrated.fontSize": 14,
+  // "editor.glyphMargin": false,
+  // "workbench.activityBar.location": "default",
+  // "editor.lineNumbers": "off",
+  // "files.eol": "\n", // Final de linha sempre será LF
+  "workbench.editor.labelFormat": "short",
+  // "editor.tabSize": 2,
+  "explorer.compactFolders": false,
+  "git.ignoreLimitWarning": true
+
+  //   // 🛠 Formatação e Lint
+  //   "editor.defaultFormatter": "esbenp.prettier-vscode",
+  //   "editor.formatOnSave": true,
+
+  //   "editor.codeActionsOnSave": {
+  //     "source.fixAll.eslint": "explicit"
+  //   },
+
+  //   "[javascript]": {
+  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  //   },
+  //   "[typescript]": {
+  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  //   },
+  //   "[xml]": {
+  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  //   },
+  //   "[svg]": {
+  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  //   },
+  //   "[html]": {
+  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  //   }
+  //
+}
+
+```
+
+
+--- Caminho: backend ---
+--- Caminho: backend/Dockerfile ---
+```dockerfile
+FROM node:20-alpine AS base
+
+WORKDIR /app
+
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+
+RUN \
+    if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    elif [ -f pnpm-lock.yaml ]; then pnpm i --frozen-lockfile; \
+    else npm ci; \
+    fi
+
+FROM base AS builder
+
+WORKDIR /app
+
+COPY --from=base /app/node_modules ./node_modules
+COPY tsconfig.json .
+COPY src ./src
+
+RUN npx tsc
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Instalar dockerize para aguardar o PostgreSQL
+RUN apk add --no-cache wget
+RUN wget https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-alpine-linux-amd64-v0.6.1.tar.gz \
+    && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-v0.6.1.tar.gz \
+    && rm dockerize-alpine-linux-amd64-v0.6.1.tar.gz
+
+COPY --from=builder /app/dist ./dist
+COPY --from=base /app/node_modules ./node_modules
+COPY package.json .
+
+# Comando padrão aguarda o banco e inicia a aplicação
+CMD ["dockerize", "-wait", "tcp://logo-ali-db:5432", "-timeout", "30s", "node", "./dist/index.js"]
+```
+
+--- Caminho: backend/package.json ---
+```json
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "API Backend para LogoAli - Serviços Públicos SP",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc",
+    "start": "node ./dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "dev:watch": "nodemon --exec ts-node src/index.ts",
+    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up"
+  },
+  "keywords": [
+    "viacep",
+    "api",
+    "cache",
+    "sao-paulo",
+    "servicos-publicos"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.1.0",
+    "@types/pg": "^8.15.5",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
+
+```
+
+--- Caminho: backend/src ---
+--- Caminho: backend/src/controllers ---
+--- Caminho: backend/src/controllers/viacepController.ts ---
+```typescript
+import { Request, Response } from "express";
+import { ViaCepService } from "../services/viacepService";
+export class ViaCepController {
+  private viaCepService: ViaCepService;
+
+  constructor() {
+    this.viaCepService = new ViaCepService();
+  }
+
+  /**
+   * GET /api/cep/:cep
+   * Busca informações de um CEP
+   */
+  public getCep = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { cep } = req.params;
+
+      if (!cep) {
+        res.status(400).json({
+          error: "CEP é obrigatório",
+          message: "Informe um CEP válido na URL",
+        });
+        return;
+      }
+
+      const startTime = Date.now();
+      const result = await this.viaCepService.getCep(cep);
+      const responseTime = Date.now() - startTime;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          cep: result.cep,
+          logradouro: result.logradouro,
+          complemento: result.complemento,
+          unidade: result.unidade,
+          bairro: result.bairro,
+          localidade: result.localidade,
+          uf: result.uf,
+        },
+        meta: {
+          cache: result.cacheStatus,
+          responseTime: `${responseTime}ms`,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error: any) {
+      console.error("Erro no controller ViaCEP:", error);
+
+      res.status(400).json({
+        success: false,
+        error: "Erro ao buscar CEP",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+
+  /**
+   * GET /api/cep/cache/stats
+   * Retorna estatísticas do cache
+   */
+  public getCacheStats = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const stats = await this.viaCepService.getCacheStats();
+
+      res.status(200).json({
+        success: true,
+        data: {
+          cache_stats: stats,
+          cache_ttl_hours: 24,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error: any) {
+      console.error("Erro ao obter estatísticas do cache:", error);
+
+      res.status(500).json({
+        success: false,
+        error: "Erro ao obter estatísticas do cache",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+
+  /**
+   * DELETE /api/cep/cache/expired
+   * Remove registros expirados do cache
+   */
+  public clearExpiredCache = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const deletedCount = await this.viaCepService.clearExpiredCache();
+
+      res.status(200).json({
+        success: true,
+        message: `${deletedCount} registros expirados removidos do cache`,
+        data: {
+          deleted_records: deletedCount,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error: any) {
+      console.error("Erro ao limpar cache:", error);
+
+      res.status(500).json({
+        success: false,
+        error: "Erro ao limpar cache expirado",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+
+  /**
+   * POST /api/cep/test/fake
+   * Endpoint para testar com dados fake (sem frontend)
+   */
+  public testWithFakeData = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const testCeps = [
+        "01001-000", // Praça da Sé
+        "04038-001", // Vila Olímpia
+        "01310-100", // Av. Paulista
+        "08540-226", // Ferraz de Vasconcelos
+        "01234-567", // CEP fake para testar erro
+      ];
+
+      const results = [];
+
+      for (const testCep of testCeps) {
+        try {
+          const startTime = Date.now();
+          const result = await this.viaCepService.getCep(testCep);
+          const responseTime = Date.now() - startTime;
+
+          results.push({
+            cep: testCep,
+            success: true,
+            data: result,
+            responseTime: `${responseTime}ms`,
+          });
+        } catch (error: any) {
+          results.push({
+            cep: testCep,
+            success: false,
+            error: error.message,
+          });
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Teste com dados fake concluído",
+        data: {
+          total_tests: testCeps.length,
+          results: results,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error: any) {
+      console.error("Erro no teste fake:", error);
+
+      res.status(500).json({
+        success: false,
+        error: "Erro ao executar teste fake",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  };
+}
+
+```
+
+
+--- Caminho: backend/src/database ---
+--- Caminho: backend/src/database/database.ts ---
+```typescript
+import { Pool, QueryResult, QueryResultRow } from "pg";
+import dotenv from "dotenv";
+import path from "path";
+
+// Carregar variáveis de ambiente
+dotenv.config({
+  path: path.resolve(__dirname, "..", "..", "..", ".env.development"),
+});
+
+// Determina a porta baseada no ambiente
+function getDatabasePort(): number {
+  const envPort = process.env.POSTGRES_PORT;
+
+  // Se estamos dentro do Docker (NODE_ENV=development com Docker)
+  // o PostgreSQL sempre roda na porta 5432 DENTRO da rede Docker
+  if (
+    process.env.NODE_ENV === "development" &&
+    process.env.POSTGRES_HOST === "logo-ali-db"
+  ) {
+    console.log("🐳 Executando dentro do Docker - usando porta interna 5432");
+    return 5432;
+  }
+
+  // Se estamos rodando localmente (fora do Docker)
+  // usa a porta do .env (5434 para este projeto)
+  console.log(`💻 Executando localmente - usando porta ${envPort}`);
+  return Number(envPort) || 5432;
+}
+
+const pool = new Pool({
+  host: process.env.POSTGRES_HOST,
+  port: getDatabasePort(),
+  user: process.env.POSTGRES_USER,
+  database: process.env.POSTGRES_DB,
+  password: process.env.POSTGRES_PASSWORD,
+  ssl: process.env.NODE_ENV === "production" ? true : false,
+});
+
+async function query(
+  queryObject: string,
+  params: any[] = []
+): Promise<QueryResult<QueryResultRow>> {
+  try {
+    const result = await pool.query(queryObject, params);
+    return result;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+}
+
+async function getClient() {
+  return pool.connect();
+}
+
+export default {
+  query,
+  getClient,
+};
+
+```
+
+--- Caminho: backend/src/database/migrations ---
+--- Caminho: backend/src/database/migrations/001_initial_setup.sql ---
+```sql
+-- Migração inicial do sistema LogoAli
+-- Arquivo: C:\workspace\Meus Projetos\LogoAli\logo-ali\backend\src\database\migrations\001_initial_setup.sql
+
+-- Criação de extensões úteis (se necessário)
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Configurações iniciais do banco
+-- COMMENT ON DATABASE logo_ali_db IS 'Banco de dados do sistema LogoAli - Serviços Públicos SP';
+
+-- Log da migração inicial
+DO $$ 
+BEGIN
+    RAISE NOTICE 'Executando migração inicial 001_initial_setup.sql';
+    RAISE NOTICE 'Sistema LogoAli - Base de dados inicializada';
+END $$;
+```
+
+--- Caminho: backend/src/database/migrations/002_create_viacep_cache.sql ---
+```sql
+-- Migração para criar tabela de cache do ViaCEP
+-- Arquivo: C:\workspace\Meus Projetos\LogoAli\logo-ali\backend\src\database\migrations\002_create_viacep_cache.sql
+
+CREATE TABLE IF NOT EXISTS viacep_cache (
+  id SERIAL PRIMARY KEY,
+  cep VARCHAR(9) NOT NULL UNIQUE, -- formato: 01001-000
+  logradouro VARCHAR(255),
+  complemento VARCHAR(255),
+  unidade VARCHAR(50),
+  bairro VARCHAR(100),
+  localidade VARCHAR(100),
+  uf VARCHAR(2),
+  cached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índices para otimizar consultas
+CREATE INDEX IF NOT EXISTS idx_viacep_cache_cep ON viacep_cache(cep);
+CREATE INDEX IF NOT EXISTS idx_viacep_cache_expires ON viacep_cache(expires_at);
+
+-- Comentários para documentação
+COMMENT ON TABLE viacep_cache IS 'Cache para dados do ViaCEP com TTL de 24 horas';
+COMMENT ON COLUMN viacep_cache.cep IS 'CEP no formato 00000-000';
+COMMENT ON COLUMN viacep_cache.expires_at IS 'Data/hora de expiração do cache';
+COMMENT ON COLUMN viacep_cache.cached_at IS 'Quando foi armazenado no cache';
+```
+
+--- Caminho: backend/src/database/migrations/migrate.ts ---
+```typescript
+import fs from "fs";
+import path from "path";
+import db from "../database";
+
+interface Migration {
+  id: number;
+  filename: string;
+  content: string;
+}
+
+async function createMigrationsTable() {
+  const query = `
+    CREATE TABLE IF NOT EXISTS migrations (
+      id SERIAL PRIMARY KEY,
+      filename VARCHAR(255) NOT NULL UNIQUE,
+      executed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  try {
+    console.log("🔄 Criando tabela de migrações...");
+    await db.query(query);
+    console.log("✅ Tabela 'migrations' criada/verificada com sucesso");
+  } catch (error) {
+    console.error("❌ Erro ao criar tabela de migrações:", error);
+    throw error;
+  }
+}
+
+async function getExecutedMigrations(): Promise<string[]> {
+  try {
+    const result = await db.query(
+      "SELECT filename FROM migrations ORDER BY id",
+    );
+    return result.rows.map((row: any) => row.filename);
+  } catch (error) {
+    // Se a tabela não existir ainda
+    if ((error as any).code === "42P01") {
+      console.log("📋 Tabela de migrações ainda não existe");
+      return [];
+    }
+    console.error("❌ Erro ao obter migrações executadas:", error);
+    throw error;
+  }
+}
+
+async function getMigrationFiles(): Promise<Migration[]> {
+  const migrationsDir = __dirname;
+
+  if (!fs.existsSync(migrationsDir)) {
+    console.log("📁 Criando diretório de migrações...");
+    fs.mkdirSync(migrationsDir, { recursive: true });
+    return [];
+  }
+
+  const files = fs
+    .readdirSync(migrationsDir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort();
+
+  console.log(`📄 Encontrados ${files.length} arquivos de migração:`, files);
+
+  return files.map((filename) => {
+    const content = fs.readFileSync(path.join(migrationsDir, filename), "utf8");
+    const id = parseInt(filename.split("_")[0]) || 0;
+    return { id, filename, content };
+  });
+}
+
+async function executeMigration(migration: Migration) {
+  const client = await db.getClient();
+
+  try {
+    console.log(`🔄 Executando migração: ${migration.filename}`);
+
+    // Inicia transação
+    await client.query("BEGIN");
+
+    // Executa o SQL da migração
+    if (migration.content.trim()) {
+      console.log(`📝 Executando SQL da migração...`);
+      await client.query(migration.content);
+    }
+
+    // Registra a migração como executada
+    await client.query("INSERT INTO migrations (filename) VALUES ($1)", [
+      migration.filename,
+    ]);
+
+    // Confirma transação
+    await client.query("COMMIT");
+
+    console.log(`✅ Migração executada com sucesso: ${migration.filename}`);
+  } catch (error) {
+    // Desfaz transação em caso de erro
+    await client.query("ROLLBACK");
+    console.error(`❌ Erro na migração ${migration.filename}:`, error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function runMigrations() {
+  try {
+    console.log("🚀 Iniciando sistema de migrações...");
+
+    // Primeiro cria a tabela de migrações
+    await createMigrationsTable();
+
+    // Busca migrações já executadas
+    const executedMigrations = await getExecutedMigrations();
+    console.log(`📋 Migrações já executadas: ${executedMigrations.length}`);
+
+    // Busca arquivos de migração
+    const migrationFiles = await getMigrationFiles();
+
+    // Filtra migrações pendentes
+    const pendingMigrations = migrationFiles.filter(
+      (migration) => !executedMigrations.includes(migration.filename),
+    );
+
+    if (pendingMigrations.length === 0) {
+      console.log("✅ Nenhuma migração pendente encontrada");
+      return;
+    }
+
+    console.log(
+      `⚙️ Executando ${pendingMigrations.length} migrações pendentes...`,
+    );
+
+    for (const migration of pendingMigrations) {
+      await executeMigration(migration);
+    }
+
+    console.log("🎉 Todas as migrações foram executadas com sucesso!");
+  } catch (error) {
+    console.error("💥 Erro durante execução das migrações:", error);
+    throw error;
+  }
+}
+
+```
+
+
+
+--- Caminho: backend/src/index.ts ---
+```typescript
+import express from "express";
+import dotenv from "dotenv";
+import path from "path";
+import db from "./database/database";
+import { runMigrations } from "./database/migrations/migrate";
+import viaCepRoutes from "./routes/viacepRoutes";
+
+// Carrega variáveis de ambiente
+dotenv.config({
+  path: path.resolve(__dirname, "..", "..", ".env.development"),
+});
+
+const app = express();
+const PORT = process.env.BACKEND_PORT || 3333;
+
+app.use(express.json());
+
+async function startServer() {
+  try {
+    console.log("🔧 === DEBUG INFO ===");
+    console.log("NODE_ENV:", process.env.NODE_ENV);
+    console.log("POSTGRES_HOST:", process.env.POSTGRES_HOST);
+    console.log("POSTGRES_PORT:", process.env.POSTGRES_PORT);
+    console.log("POSTGRES_DB:", process.env.POSTGRES_DB);
+    console.log("POSTGRES_USER:", process.env.POSTGRES_USER);
+    console.log(
+      "POSTGRES_PASSWORD:",
+      process.env.POSTGRES_PASSWORD ? "***SET***" : "NOT SET"
+    );
+    console.log("===================");
+
+    console.log("🔄 Aguardando 5 segundos para o PostgreSQL inicializar...");
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    console.log("🔄 Testando conexão com banco de dados...");
+
+    // Testa a conexão primeiro com mais detalhes
+    try {
+      const testResult = await db.query(
+        "SELECT NOW() as current_time, version() as pg_version"
+      );
+      console.log("✅ Conexão com banco estabelecida!");
+      console.log("📅 Hora do servidor:", testResult.rows[0].current_time);
+      console.log(
+        "🐘 Versão PostgreSQL:",
+        testResult.rows[0].pg_version.split(" ")[0]
+      );
+    } catch (connectionError) {
+      console.error("❌ ERRO DE CONEXÃO:", connectionError);
+      throw connectionError;
+    }
+
+    console.log("🔄 Iniciando migrações...");
+    try {
+      await runMigrations();
+      console.log("✅ Migrações concluídas!");
+    } catch (migrationError) {
+      console.error("❌ ERRO NAS MIGRAÇÕES:", migrationError);
+      throw migrationError;
+    }
+
+    // Verificar se as tabelas foram criadas
+    try {
+      const tableCheck = await db.query(`
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+      `);
+      console.log(
+        "📋 Tabelas existentes:",
+        tableCheck.rows.map((r) => r.table_name)
+      );
+    } catch (error) {
+      console.error("❌ Erro ao verificar tabelas:", error);
+    }
+
+    // ========== ROTAS ==========
+
+    // Rota de status do sistema
+    app.get("/api/status", async (req, res) => {
+      try {
+        const dbTest = await db.query("SELECT NOW() as time");
+        const tablesResult = await db.query(`
+          SELECT table_name
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
+        `);
+
+        res.status(200).json({
+          status: "Backend is running!",
+          database: "Connected",
+          port: PORT,
+          server_time: dbTest.rows[0].time,
+          tables: tablesResult.rows.map((r) => r.table_name),
+          api_version: "1.0.0",
+        });
+      } catch (error: any) {
+        console.error("Database connection failed:", error);
+        res.status(500).json({
+          status: "Backend is running!",
+          database: "Disconnected",
+          error: error.message,
+        });
+      }
+    });
+
+    // Rota para verificar migrações
+    app.get("/api/migrations", async (req, res) => {
+      try {
+        const result = await db.query("SELECT * FROM migrations ORDER BY id");
+        res.status(200).json({
+          migrations: result.rows,
+          total: result.rowCount,
+        });
+      } catch (error: any) {
+        res.status(500).json({
+          error: "Erro ao buscar migrações",
+          message: error.message,
+        });
+      }
+    });
+
+    // Rota para forçar execução das migrações
+    app.post("/api/force-migrations", async (req, res) => {
+      try {
+        console.log("🔄 Forçando execução das migrações...");
+        await runMigrations();
+        res.status(200).json({
+          message: "Migrações executadas com sucesso!",
+        });
+      } catch (error: any) {
+        console.error("❌ Erro ao forçar migrações:", error);
+        res.status(500).json({
+          error: "Erro ao executar migrações",
+          message: error.message,
+        });
+      }
+    });
+
+    // Registrar rotas do ViaCEP
+    app.use("/api", viaCepRoutes);
+
+    // Middleware para rotas não encontradas
+    app.use("*", (req, res) => {
+      res.status(404).json({
+        error: "Rota não encontrada",
+        message: `Endpoint ${req.method} ${req.originalUrl} não existe`,
+        available_endpoints: [
+          "GET /api/status",
+          "GET /api/migrations",
+          "POST /api/force-migrations",
+          "GET /api/cep/:cep",
+          "GET /api/cep/cache/stats",
+          "DELETE /api/cep/cache/expired",
+          "POST /api/cep/test/fake",
+        ],
+      });
+    });
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Backend server listening on port ${PORT}`);
+      console.log(`📊 Status: http://localhost:${PORT}/api/status`);
+      console.log(`📋 Migrações: http://localhost:${PORT}/api/migrations`);
+      console.log(
+        `🔄 Forçar migrações: POST http://localhost:${PORT}/api/force-migrations`
+      );
+      console.log(`📍 ViaCEP: http://localhost:${PORT}/api/cep/{cep}`);
+      console.log(
+        `📈 Cache Stats: http://localhost:${PORT}/api/cep/cache/stats`
+      );
+      console.log(
+        `🧪 Teste Fake: POST http://localhost:${PORT}/api/cep/test/fake`
+      );
+    });
+  } catch (error) {
+    console.error("💥 FALHA CRÍTICA ao iniciar o backend:");
+    console.error("Erro completo:", error);
+    console.error("Stack trace:", (error as Error).stack);
+    process.exit(1);
+  }
+}
+
+startServer();
+
+```
+
+--- Caminho: backend/src/routes ---
+--- Caminho: backend/src/routes/viacepRoutes.ts ---
+```typescript
+import { Router } from "express";
+import { ViaCepController } from "../controllers/viacepController";
+
+const router = Router();
+const viaCepController = new ViaCepController();
+
+router.post("/cep/test/fake", viaCepController.testWithFakeData);
+
+router.get("/cep/cache/stats", viaCepController.getCacheStats);
+router.delete("/cep/cache/expired", viaCepController.clearExpiredCache);
+
+router.get("/cep/:cep", viaCepController.getCep);
+
+export default router;
+
+```
+
+
+--- Caminho: backend/src/services ---
+--- Caminho: backend/src/services/viacepService.ts ---
+```typescript
+import db from "../database/database";
+import {
+  ViaCepResponse,
+  ViaCepCacheData,
+  ViaCepApiResponse,
+  CacheStatus,
+} from "../types/viacep";
+
+export class ViaCepService {
+  private readonly CACHE_TTL_HOURS = 24; // TTL de 24 horas
+  private readonly VIACEP_BASE_URL = "https://viacep.com.br/ws";
+
+  /**
+   * Normaliza o CEP removendo caracteres especiais
+   */
+  private normalizeCep(cep: string): string {
+    return cep.replace(/\D/g, "");
+  }
+
+  /**
+   * Formata o CEP para o padrão 00000-000
+   */
+  private formatCep(cep: string): string {
+    const normalized = this.normalizeCep(cep);
+    if (normalized.length === 8) {
+      return `${normalized.substring(0, 5)}-${normalized.substring(5)}`;
+    }
+    return normalized;
+  }
+
+  /**
+   * Valida se o CEP tem formato válido
+   */
+  private isValidCep(cep: string): boolean {
+    const normalized = this.normalizeCep(cep);
+    return /^\d{8}$/.test(normalized);
+  }
+
+  /**
+   * Busca CEP no cache do banco de dados
+   */
+  private async getCachedCep(cep: string): Promise<ViaCepCacheData | null> {
+    try {
+      const formattedCep = this.formatCep(cep);
+
+      const query = `
+        SELECT * FROM viacep_cache 
+        WHERE cep = $1 AND expires_at > NOW()
+        ORDER BY cached_at DESC 
+        LIMIT 1
+      `;
+
+      const result = await db.query(query, [formattedCep]);
+
+      if (result.rows.length > 0) {
+        console.log(`✅ Cache HIT para CEP: ${formattedCep}`);
+        return result.rows[0] as ViaCepCacheData;
+      }
+
+      console.log(`❌ Cache MISS para CEP: ${formattedCep}`);
+      return null;
+    } catch (error) {
+      console.error("Erro ao buscar CEP no cache:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Salva CEP no cache
+   */
+  private async cacheCep(cepData: ViaCepResponse): Promise<void> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + this.CACHE_TTL_HOURS);
+
+      const query = `
+        INSERT INTO viacep_cache (cep, logradouro, complemento, unidade, bairro, localidade, uf, expires_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (cep) 
+        DO UPDATE SET 
+          logradouro = EXCLUDED.logradouro,
+          complemento = EXCLUDED.complemento,
+          unidade = EXCLUDED.unidade,
+          bairro = EXCLUDED.bairro,
+          localidade = EXCLUDED.localidade,
+          uf = EXCLUDED.uf,
+          expires_at = EXCLUDED.expires_at,
+          cached_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+
+      await db.query(query, [
+        cepData.cep,
+        cepData.logradouro,
+        cepData.complemento,
+        cepData.unidade,
+        cepData.bairro,
+        cepData.localidade,
+        cepData.uf,
+        expiresAt.toISOString(),
+      ]);
+
+      console.log(
+        `💾 CEP ${cepData.cep} salvo no cache até ${expiresAt.toISOString()}`
+      );
+    } catch (error) {
+      console.error("Erro ao salvar CEP no cache:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca CEP na API do ViaCEP
+   */
+  private async fetchFromViaCepApi(cep: string): Promise<ViaCepResponse> {
+    try {
+      const normalizedCep = this.normalizeCep(cep);
+      const url = `${this.VIACEP_BASE_URL}/${normalizedCep}/json/`;
+
+      console.log(`🌐 Buscando CEP ${normalizedCep} na API ViaCEP...`);
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.erro) {
+        throw new Error(`CEP ${normalizedCep} não encontrado`);
+      }
+
+      // Retorna apenas os campos que queremos usar
+      const result: ViaCepResponse = {
+        cep: this.formatCep(data.cep),
+        logradouro: data.logradouro || "",
+        complemento: data.complemento || "",
+        unidade: data.unidade || "",
+        bairro: data.bairro || "",
+        localidade: data.localidade || "",
+        uf: data.uf || "",
+      };
+
+      console.log(`✅ CEP ${result.cep} encontrado na API`);
+      return result;
+    } catch (error) {
+      console.error(`Erro ao buscar CEP na API:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Método principal para buscar CEP (com cache)
+   */
+  public async getCep(cep: string): Promise<ViaCepApiResponse> {
+    // Validação do CEP
+    if (!this.isValidCep(cep)) {
+      throw new Error("CEP inválido. Use o formato 00000000 ou 00000-000");
+    }
+
+    let cacheStatus: CacheStatus = {
+      hit: false,
+      expired: false,
+      source: "api",
+    };
+
+    try {
+      // 1. Tentar buscar no cache primeiro
+      const cachedData = await this.getCachedCep(cep);
+
+      if (cachedData) {
+        cacheStatus = {
+          hit: true,
+          expired: false,
+          source: "cache",
+        };
+
+        return {
+          cep: cachedData.cep,
+          logradouro: cachedData.logradouro || "",
+          complemento: cachedData.complemento || "",
+          unidade: cachedData.unidade || "",
+          bairro: cachedData.bairro || "",
+          localidade: cachedData.localidade || "",
+          uf: cachedData.uf || "",
+          cacheStatus,
+        };
+      }
+
+      // 2. Se não estiver no cache, buscar na API
+      const apiData = await this.fetchFromViaCepApi(cep);
+
+      // 3. Salvar no cache
+      await this.cacheCep(apiData);
+
+      cacheStatus = {
+        hit: false,
+        expired: false,
+        source: "api",
+      };
+
+      return {
+        ...apiData,
+        cacheStatus,
+      };
+    } catch (error) {
+      console.error("Erro no serviço ViaCEP:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Limpa cache expirado (método utilitário)
+   */
+  public async clearExpiredCache(): Promise<number> {
+    try {
+      const query = "DELETE FROM viacep_cache WHERE expires_at <= NOW()";
+      const result = await db.query(query, []);
+
+      console.log(
+        `🧹 Removidos ${result.rowCount || 0} registros expirados do cache`
+      );
+      return result.rowCount || 0;
+    } catch (error) {
+      console.error("Erro ao limpar cache expirado:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Estatísticas do cache
+   */
+  public async getCacheStats(): Promise<any> {
+    try {
+      const queries = [
+        { sql: "SELECT COUNT(*) as total FROM viacep_cache", params: [] },
+        {
+          sql: "SELECT COUNT(*) as valid FROM viacep_cache WHERE expires_at > NOW()",
+          params: [],
+        },
+        {
+          sql: "SELECT COUNT(*) as expired FROM viacep_cache WHERE expires_at <= NOW()",
+          params: [],
+        },
+      ];
+
+      const [totalResult, validResult, expiredResult] = await Promise.all(
+        queries.map(({ sql, params }) => db.query(sql, params))
+      );
+
+      return {
+        total: parseInt(totalResult.rows[0].total),
+        valid: parseInt(validResult.rows[0].valid),
+        expired: parseInt(expiredResult.rows[0].expired),
+      };
+    } catch (error) {
+      console.error("Erro ao obter estatísticas do cache:", error);
+      throw error;
+    }
+  }
+}
+
+```
+
+
+--- Caminho: backend/src/types ---
+--- Caminho: backend/src/types/viacep.ts ---
+```typescript
+export interface ViaCepResponse {
+  cep: string;
+  logradouro: string;
+  complemento: string;
+  unidade: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+}
+
+export interface ViaCepCacheData extends ViaCepResponse {
+  id?: number;
+  cached_at?: Date;
+  expires_at?: Date;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface CacheStatus {
+  hit: boolean;
+  expired: boolean;
+  source: "cache" | "api";
+}
+
+export interface ViaCepApiResponse extends ViaCepResponse {
+  cacheStatus: CacheStatus;
+}
+
+```
+
+
+
+--- Caminho: backend/tsconfig.json ---
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "allowJs": true // Manter se você tem ou pode ter outros arquivos JS que o TS deve processar
+  },
+  "include": ["src/**/*.ts", "src/**/*.js"], // Incluir arquivos .js se 'allowJs' estiver true e você tiver .js em 'src'
+  "exclude": ["node_modules", "dist"] // REMOVER "database.js" ou "database.ts" daqui
+}
+
+```
+
+
+--- Caminho: estrutura_e_scripts_completa.txt ---
+
+--- Caminho: frontend ---
+--- Caminho: frontend/Dockerfile ---
+```dockerfile
+# frontend/Dockerfile (Configuração para Desenvolvimento)
+FROM node:20-alpine AS base
+
+WORKDIR /app
+
+# Copia package.json e instala dependências
+# Usamos npm ci para instalações limpas e consistentes
+COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+RUN \
+    if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    elif [ -f pnpm-lock.yaml ]; then pnpm i --frozen-lockfile; \
+    else npm ci; \
+    fi
+
+# Para desenvolvimento, não precisamos de um estágio 'builder' separado para 'npm run build'
+# O 'npm run dev' será executado diretamente no container.
+# Apenas copiamos o restante do código fonte.
+COPY . .
+
+EXPOSE 3000
+
+# O comando para iniciar o Next.js em modo de desenvolvimento
+# Este comando será sobrescrito pelo 'command' no docker-compose.yml
+CMD ["npm", "run", "dev"]
+
+```
+
+--- Caminho: frontend/eslint.config.mjs ---
+
+--- Caminho: frontend/next-env.d.ts ---
+```typescript
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+
+```
+
+--- Caminho: frontend/next.config.ts ---
+```typescript
+// frontend/next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: "standalone",
+  // ... outras configurações
+};
+
+module.exports = nextConfig;
+
+```
+
+--- Caminho: frontend/package.json ---
+```json
+{
+  "name": "logo-ali",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "lint:check": "prettier --check .",
+    "lint:fix": "prettier --write ."
+  },
+  "dependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "next": "15.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "15.4.5",
+    "@eslint/eslintrc": "^3"
+  }
+}
+
+```
+
+--- Caminho: frontend/postcss.config.mjs ---
+
+--- Caminho: frontend/public ---
+--- Caminho: frontend/public/file.svg ---
+
+--- Caminho: frontend/public/globe.svg ---
+
+--- Caminho: frontend/public/next.svg ---
+
+--- Caminho: frontend/public/vercel.svg ---
+
+--- Caminho: frontend/public/window.svg ---
+
+
+--- Caminho: frontend/src ---
+--- Caminho: frontend/src/app ---
+--- Caminho: frontend/src/app/favicon.ico ---
+
+--- Caminho: frontend/src/app/globals.css ---
+
+--- Caminho: frontend/src/app/layout.tsx ---
+
+--- Caminho: frontend/src/app/page.tsx ---
+
+
+
+--- Caminho: frontend/tsconfig.json ---
+```json
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["../frontend/src/*"]
+    }
+  },
+  "include": [
+    "../frontend/next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
+
+```
+
+
+--- Caminho: gerar_estrutura.ts ---
+```typescript
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Define o caminho raiz do projeto
+// Use barras duplas para Windows para garantir que o path.join funcione corretamente
+const rootPath: string = 'C:\\workspace\\Meus Projetos\\LogoAli\\logo-ali'; 
+
+// Define os tipos de arquivo cujo conteúdo deve ser incluído
+const contentFileTypes: string[] = [
+    '.json', '.ts', '.js', '.sql',
+    'Dockerfile', '.yml', '.env', '.md',
+    '.prettierignore', '.gitignore',
+    // Usamos path.join para garantir compatibilidade com o sistema de arquivos
+    path.join('.vscode', 'settings.json') 
+];
+
+// Define os padrões de exclusão (pastas e arquivos que não devem ser incluídos)
+const exclusions: RegExp = /(node_modules|package-lock\.json|\.bin|@types|node16|\.next)/;
+
+// Define o nome do arquivo de saída
+const outputFile: string = path.join(rootPath, 'estrutura_e_scripts_completa.txt');
+
+// Função para obter a linguagem para o bloco de código Markdown
+function getLanguage(filename: string, relativePath: string): string {
+    const ext: string = path.extname(filename);
+    switch (ext) {
+        case '.json': return 'json';
+        case '.ts': return 'typescript';
+        case '.js': return 'javascript';
+        case '.sql': return 'sql';
+        case '.yml': return 'yaml';
+        case '.md': return 'markdown';
+        default:
+            if (filename === 'Dockerfile') return 'dockerfile';
+            // Usa startsWith para cobrir .env, .env.development, etc.
+            if (filename.startsWith('.env')) return 'plaintext'; 
+            if (filename === '.prettierignore' || filename === '.gitignore') return 'plaintext';
+            // Verifica o caminho relativo para settings.json para ser mais específico
+            if (relativePath === path.join('.vscode', 'settings.json').replace(/\\/g, '/')) return 'json';
+            return 'plaintext';
+    }
+}
+
+// Limpa o conteúdo do arquivo de saída se ele já existir
+// Garante codificação UTF-8 para evitar problemas de caracteres
+fs.writeFileSync(outputFile, 'Estrutura de pastas e arquivos com conteúdo:\r\n', { encoding: 'utf8' });
+
+// Função recursiva para percorrer diretórios
+function processDirectory(dirPath: string, depth: number): void {
+    // Limita a profundidade para evitar loops infinitos ou excesso de arquivos
+    if (depth > 4) { 
+        return;
+    }
+
+    let items: fs.Dirent[];
+    try {
+        items = fs.readdirSync(dirPath, { withFileTypes: true });
+    } catch (error: any) { // Usamos 'any' para o tipo de erro para compatibilidade
+        // Loga erro se não conseguir ler o diretório (ex: permissão negada)
+        console.error(`Erro ao ler diretório '${dirPath}': ${error.message}`);
+        return;
+    }
+
+    for (const item of items) {
+        const fullPath: string = path.join(dirPath, item.name);
+        // Normaliza o caminho para garantir que as barras sejam consistentes (Windows/Linux)
+        const relativePath: string = fullPath.replace(rootPath, '').replace(/^[\\\/]/, '').replace(/\\/g, '/');
+
+        // Testa exclusões usando o caminho relativo normalizado
+        if (exclusions.test(relativePath)) {
+            continue; // Ignora itens que correspondem aos padrões de exclusão
+        }
+
+        // Adiciona o caminho do arquivo/pasta ao arquivo de saída
+        fs.appendFileSync(outputFile, `--- Caminho: ${relativePath} ---\r\n`, { encoding: 'utf8' });
+
+        if (item.isDirectory()) {
+            processDirectory(fullPath, depth + 1); // Continua recursivamente para subdiretórios
+        } else {
+            // Se for um arquivo, verifica se o conteúdo deve ser incluído
+            let includeContent: boolean = false;
+            for (const type of contentFileTypes) {
+                // Ajusta a lógica de correspondência para ser mais robusta
+                // Verifica se o caminho relativo termina com o tipo, ou se o nome do item é o tipo
+                // ou se o tipo contém curingas e corresponde ao nome do item
+                if (relativePath.endsWith(type) || item.name === type || (type.includes('*') && item.name.match(new RegExp(type.replace(/\*/g, '.*'))))) {
+                    includeContent = true;
+                    break;
+                }
+            }
+
+            // Tratamento específico para .vscode/settings.json, garantindo que seja incluído
+            if (relativePath === path.join('.vscode', 'settings.json').replace(/\\/g, '/')) {
+                includeContent = true;
+            }
+
+            if (includeContent) {
+                try {
+                    // Lê o conteúdo do arquivo
+                    let fileContent: string = fs.readFileSync(fullPath, { encoding: 'utf8' });
+                    // Garante que fileContent é uma string, mesmo que o arquivo esteja vazio
+                    if (typeof fileContent !== 'string') {
+                        fileContent = String(fileContent);
+                    }
+                    const language: string = getLanguage(item.name, relativePath);
+                    fs.appendFileSync(outputFile, `\`\`\`${language}\r\n`, { encoding: 'utf8' });
+                    fs.appendFileSync(outputFile, fileContent + '\r\n', { encoding: 'utf8' });
+                    fs.appendFileSync(outputFile, '```\r\n', { encoding: 'utf8' });
+                } catch (error: any) { // Usamos 'any' para o tipo de erro para compatibilidade
+                    // Loga o erro no console e no arquivo de saída
+                    console.error(`Erro ao ler o conteúdo do arquivo '${relativePath}': ${error.message}`);
+                    fs.appendFileSync(outputFile, `\`\`\`plaintext\r\n`, { encoding: 'utf8' });
+                    fs.appendFileSync(outputFile, `Erro ao ler o conteúdo do arquivo '${relativePath}': ${error.message}\r\n`, { encoding: 'utf8' });
+                    fs.appendFileSync(outputFile, '```\r\n', { encoding: 'utf8' });
+                }
+            }
+        }
+        // Adiciona uma linha vazia para melhor separação visual entre os itens
+        fs.appendFileSync(outputFile, '\r\n', { encoding: 'utf8' }); 
+    }
+}
+
+// Inicia o processo a partir da raiz
+processDirectory(rootPath, 0);
+
+console.log(`✅ Estrutura e conteúdo dos scripts salvos em ${outputFile}`);
+```
+
+--- Caminho: infra ---
+--- Caminho: infra/docker-compose.yml ---
+```yaml
+services:
+  logo-ali-front:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules # Garante que node_modules seja um volume separado para hot-reloading
+    environment:
+      NODE_ENV: development
+    command: npm run dev # Comando para iniciar o Next.js em modo de desenvolvimento
+
+  logo-ali-back:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    ports:
+      - "3333:3333"
+    volumes:
+      - ../backend:/app # Mapeia o código fonte do backend para o container
+      - /app/node_modules # Garante que node_modules seja um volume separado para hot-reloading
+    environment:
+      NODE_ENV: development
+    env_file:
+      - ../.env.development # Carrega variáveis de ambiente do arquivo .env.development
+    depends_on:
+      logo-ali-db:
+        condition: service_healthy # Garante que o backend só inicie quando o DB estiver saudável
+    # Comando para aguardar o DB e iniciar o backend em modo de desenvolvimento com ts-node
+    command: sh -c "dockerize -wait tcp://logo-ali-db:5432 -timeout 30s npm run dev"
+
+  logo-ali-db:
+    image: postgres:17.4-alpine3.21 # Versão específica do PostgreSQL
+    container_name: logo-ali-db # Nome explícito para o container
+    env_file:
+      - ../.env.development # Mantém o env_file para outras variáveis
+    environment: # <-- ADICIONADO: Define variáveis críticas diretamente
+      POSTGRES_USER: admin # <-- Confirme este usuário
+      POSTGRES_DB: logo_ali_db # <-- Confirme este nome de DB
+      POSTGRES_PASSWORD: admin # <-- SUBSTITUA PELA SUA SENHA REAL AQUI!
+    ports:
+      - "5434:5432" # Mapeia a porta 5434 do host para a porta 5432 do container
+    volumes:
+      - pgdata_logo-ali:/var/lib/postgresql/data # Volume persistente para os dados do DB
+    healthcheck: # Verifica a saúde do banco de dados
+      test: ["CMD-SHELL", "pg_isready -U admin -d logo_ali_db"] # Use o usuário e DB reais aqui
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata_logo-ali: # Definição do volume persistente para o banco de dados
+
+```
+
+
+--- Caminho: package.json ---
+```json
+{
+  "name": "logo-ali",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "lint:check": "prettier --check .",
+    "lint:fix": "prettier --write .",
+    "generate:structure": "npx ts-node gerar_estrutura.ts",
+    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.3",
+    "prettier": "^3.6.2"
+  }
+}
+
+```
+
+--- Caminho: README.md ---
+```markdown
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+#   l o g o - a l i 
+ 
+ 
+
+```
+
+--- Caminho: tsconfig.json ---
+```json
+{
+  "compilerOptions": {
+    "target": "ES2022", // Versão moderna do JavaScript
+    "module": "CommonJS", // Tipo de módulo para Node.js
+    "esModuleInterop": true, // Permite import/require misturados
+    "forceConsistentCasingInFileNames": true, // Garante consistência de maiúsculas/minúsculas nos nomes de arquivos
+    "strict": true, // Ativa todas as verificações de tipo rigorosas
+    "skipLibCheck": true, // Ignora verificações de tipo de arquivos de declaração
+    "outDir": "./dist", // Onde os arquivos compilados serão colocados (não é usado pelo ts-node, mas é um bom padrão)
+    "rootDir": ".", // O diretório raiz dos arquivos TypeScript
+    "resolveJsonModule": true // Permite importar arquivos .json
+  },
+  "include": [
+    "gerar_estrutura.ts", // Inclui explicitamente o seu script
+    "**/*.ts" // Inclui todos os arquivos .ts no projeto, se necessário para outras ferramentas
+  ],
+  "exclude": [
+    "node_modules", // Exclui a pasta node_modules
+    "backend/node_modules",
+    "frontend/node_modules",
+    "**/*.spec.ts", // Exclui arquivos de teste
+    "dist" // Exclui a pasta de saída
+  ]
+}
+
+```
+

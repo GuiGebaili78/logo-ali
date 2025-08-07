@@ -1,0 +1,21 @@
+{
+  "name": "logo-ali",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "lint:check": "prettier --check .",
+    "lint:fix": "prettier --write .",
+    "generate:structure": "npx ts-node gerar_estrutura.ts",
+    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.3",
+    "prettier": "^3.6.2"
+  }
+}

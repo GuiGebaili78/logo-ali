@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", // Versão moderna do JavaScript
+    "module": "CommonJS", // Tipo de módulo para Node.js
+    "esModuleInterop": true, // Permite import/require misturados
+    "forceConsistentCasingInFileNames": true, // Garante consistência de maiúsculas/minúsculas nos nomes de arquivos
+    "strict": true, // Ativa todas as verificações de tipo rigorosas
+    "skipLibCheck": true, // Ignora verificações de tipo de arquivos de declaração
+    "outDir": "./dist", // Onde os arquivos compilados serão colocados (não é usado pelo ts-node, mas é um bom padrão)
+    "rootDir": ".", // O diretório raiz dos arquivos TypeScript
+    "resolveJsonModule": true // Permite importar arquivos .json
+  },
+  "include": [
+    "gerar_estrutura.ts", // Inclui explicitamente o seu script
+    "**/*.ts" // Inclui todos os arquivos .ts no projeto, se necessário para outras ferramentas
+  ],
+  "exclude": [
+    "node_modules", // Exclui a pasta node_modules
+    "backend/node_modules",
+    "frontend/node_modules",
+    "**/*.spec.ts", // Exclui arquivos de teste
+    "dist" // Exclui a pasta de saída
+  ]
+}
