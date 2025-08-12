@@ -1,8 +1,158 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
 @import "tailwindcss";
+
+
+
+
+:root {
+  --primary-color: #222831;
+  --secondary-color: #393E46;
+  --accent-color: #00ADB5;
+  --light-color: #EEEEEE;
+}
+
+* {
+  font-family: 'Roboto', sans-serif;
+}
+
+body {
+  background-color: var(--light-color);
+  color: var(--primary-color);
+}
+
+/* Custom CSS Classes */
+.bg-primary {
+  background-color: var(--primary-color);
+}
+
+.bg-secondary {
+  background-color: var(--secondary-color);
+}
+
+.bg-accent {
+  background-color: var(--accent-color);
+}
+
+.bg-light {
+  background-color: var(--light-color);
+}
+
+.text-primary {
+  color: var(--primary-color);
+}
+
+.text-secondary {
+  color: var(--secondary-color);
+}
+
+.text-accent {
+  color: var(--accent-color);
+}
+
+.text-light {
+  color: var(--light-color);
+}
+
+.border-primary {
+  border-color: var(--primary-color);
+}
+
+.border-accent {
+  border-color: var(--accent-color);
+}
+
+/* Loading spinner */
+.spinner {
+  border: 2px solid var(--light-color);
+  border-top: 2px solid var(--accent-color);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Map styles */
+.map-container {
+  height: 400px;
+  border-radius: 12px;
+  z-index: 1;
+}
+
+/* Service item animations */
+.service-item {
+  transition: all 0.3s ease;
+}
+
+.service-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 173, 181, 0.15);
+}
+
+/* Modal styles */
+.modal-overlay {
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Autocomplete styles */
+.autocomplete-list {
+  max-height: 200px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.autocomplete-item:hover {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+/* Leaflet map styles */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 12px;
+}
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
 }
 
 @theme inline {

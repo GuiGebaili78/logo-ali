@@ -1,194 +1,4 @@
 Estrutura de pastas e arquivos com conteúdo:
---- Caminho: .env.development ---
-
---- Caminho: .git ---
---- Caminho: .git/COMMIT_EDITMSG ---
-
---- Caminho: .git/config ---
-
---- Caminho: .git/description ---
-
---- Caminho: .git/HEAD ---
-
---- Caminho: .git/hooks ---
---- Caminho: .git/hooks/applypatch-msg.sample ---
-
---- Caminho: .git/hooks/commit-msg.sample ---
-
---- Caminho: .git/hooks/fsmonitor-watchman.sample ---
-
---- Caminho: .git/hooks/post-update.sample ---
-
---- Caminho: .git/hooks/pre-applypatch.sample ---
-
---- Caminho: .git/hooks/pre-commit.sample ---
-
---- Caminho: .git/hooks/pre-merge-commit.sample ---
-
---- Caminho: .git/hooks/pre-push.sample ---
-
---- Caminho: .git/hooks/pre-rebase.sample ---
-
---- Caminho: .git/hooks/pre-receive.sample ---
-
---- Caminho: .git/hooks/prepare-commit-msg.sample ---
-
---- Caminho: .git/hooks/push-to-checkout.sample ---
-
---- Caminho: .git/hooks/update.sample ---
-
-
---- Caminho: .git/index ---
-
---- Caminho: .git/info ---
---- Caminho: .git/info/exclude ---
-
-
---- Caminho: .git/logs ---
---- Caminho: .git/logs/HEAD ---
-
---- Caminho: .git/logs/refs ---
---- Caminho: .git/logs/refs/heads ---
---- Caminho: .git/logs/refs/heads/main ---
-
-
---- Caminho: .git/logs/refs/remotes ---
---- Caminho: .git/logs/refs/remotes/origin ---
-
-
-
-
---- Caminho: .git/objects ---
---- Caminho: .git/objects/58 ---
---- Caminho: .git/objects/58/d9a72b78cb3ba29b76c1b0ef68d2223778d358 ---
-
-
---- Caminho: .git/objects/cf ---
---- Caminho: .git/objects/cf/9dc441475e04f3b88ba5431f5267baca6ff2de ---
-
-
---- Caminho: .git/objects/ef ---
---- Caminho: .git/objects/ef/7273748ef1c7110d27850aff374e7736c4bb87 ---
-
-
---- Caminho: .git/objects/info ---
-
---- Caminho: .git/objects/pack ---
-
-
---- Caminho: .git/refs ---
---- Caminho: .git/refs/heads ---
---- Caminho: .git/refs/heads/main ---
-
-
---- Caminho: .git/refs/remotes ---
---- Caminho: .git/refs/remotes/origin ---
---- Caminho: .git/refs/remotes/origin/main ---
-
-
-
---- Caminho: .git/refs/tags ---
-
-
-
---- Caminho: .gitignore ---
-```plaintext
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-```
-
---- Caminho: .prettierignore ---
-```plaintext
-.next
-```
-
---- Caminho: .vscode ---
---- Caminho: .vscode/settings.json ---
-```json
-{
-  //"window.zoomLevel": 1,
-  // "breadcrumbs.enabled": false,
-  // "editor.fontSize": 14,
-  // "debug.console.fontSize": 14,
-  // "terminal.integrated.fontSize": 14,
-  // "editor.glyphMargin": false,
-  // "workbench.activityBar.location": "default",
-  // "editor.lineNumbers": "off",
-  // "files.eol": "\n", // Final de linha sempre será LF
-  "workbench.editor.labelFormat": "short",
-  // "editor.tabSize": 2,
-  "explorer.compactFolders": false,
-  "git.ignoreLimitWarning": true
-
-  //   // 🛠 Formatação e Lint
-  //   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  //   "editor.formatOnSave": true,
-
-  //   "editor.codeActionsOnSave": {
-  //     "source.fixAll.eslint": "explicit"
-  //   },
-
-  //   "[javascript]": {
-  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  //   },
-  //   "[typescript]": {
-  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  //   },
-  //   "[xml]": {
-  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  //   },
-  //   "[svg]": {
-  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  //   },
-  //   "[html]": {
-  //     "editor.defaultFormatter": "esbenp.prettier-vscode"
-  //   }
-  //
-}
-
-```
-
-
 --- Caminho: backend ---
 --- Caminho: backend/Dockerfile ---
 ```dockerfile
@@ -869,8 +679,8 @@ async function startServer() {
     // Registrar rotas do ViaCEP
     app.use("/api", viaCepRoutes);
 
-    // Middleware para rotas não encontradas
-    app.use("*", (req, res) => {
+    // CORRIGIDO: Middleware para rotas não encontradas - removido o "*"
+    app.use((req, res) => {
       res.status(404).json({
         error: "Rota não encontrada",
         message: `Endpoint ${req.method} ${req.originalUrl} não existe`,
@@ -1238,27 +1048,6 @@ export interface ViaCepApiResponse extends ViaCepResponse {
 
 
 
---- Caminho: backend/tsconfig.json ---
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "allowJs": true // Manter se você tem ou pode ter outros arquivos JS que o TS deve processar
-  },
-  "include": ["src/**/*.ts", "src/**/*.js"], // Incluir arquivos .js se 'allowJs' estiver true e você tiver .js em 'src'
-  "exclude": ["node_modules", "dist"] // REMOVER "database.js" ou "database.ts" daqui
-}
-
-```
-
 
 --- Caminho: estrutura_e_scripts_completa.txt ---
 
@@ -1359,6 +1148,8 @@ module.exports = nextConfig;
 
 --- Caminho: frontend/public/globe.svg ---
 
+--- Caminho: frontend/public/icons ---
+
 --- Caminho: frontend/public/next.svg ---
 
 --- Caminho: frontend/public/vercel.svg ---
@@ -1377,173 +1168,778 @@ module.exports = nextConfig;
 --- Caminho: frontend/src/app/page.tsx ---
 
 
+--- Caminho: frontend/src/components ---
+--- Caminho: frontend/src/components/layout ---
+--- Caminho: frontend/src/components/layout/Footer.tsx ---
 
---- Caminho: frontend/tsconfig.json ---
-```json
-{
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["../frontend/src/*"]
-    }
-  },
-  "include": [
-    "../frontend/next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": ["node_modules"]
+--- Caminho: frontend/src/components/layout/Header.tsx ---
+
+--- Caminho: frontend/src/components/layout/Layout.tsx ---
+
+
+--- Caminho: frontend/src/components/map ---
+--- Caminho: frontend/src/components/map/MapView.tsx ---
+
+
+--- Caminho: frontend/src/components/search ---
+--- Caminho: frontend/src/components/search/SearchBar.tsx ---
+
+--- Caminho: frontend/src/components/search/ServiceSelector.tsx ---
+
+
+--- Caminho: frontend/src/components/services ---
+--- Caminho: frontend/src/components/services/ServiceCard.tsx ---
+
+--- Caminho: frontend/src/components/services/ServiceDatailsModal.tsx ---
+
+--- Caminho: frontend/src/components/services/ServicesList.tsx ---
+
+
+--- Caminho: frontend/src/components/ui ---
+--- Caminho: frontend/src/components/ui/Button.tsx ---
+
+--- Caminho: frontend/src/components/ui/Input.tsx ---
+
+--- Caminho: frontend/src/components/ui/Loading.tsx ---
+
+
+
+--- Caminho: frontend/src/context ---
+--- Caminho: frontend/src/context/AppContext.tsx ---
+
+
+--- Caminho: frontend/src/hooks ---
+--- Caminho: frontend/src/hooks/useGeoLocation.ts ---
+```typescript
+import { useState, useEffect } from "react";
+import type { Coordinates } from "../types/location";
+
+interface GeoState {
+  coords?: Coordinates | null;
+  error?: string | null;
+  loading: boolean;
 }
+
+export function useGeoLocation(enable = true) {
+  const [state, setState] = useState<GeoState>({
+    coords: undefined,
+    error: null,
+    loading: false,
+  });
+
+  useEffect(() => {
+    if (
+      !enable ||
+      typeof navigator === "undefined" ||
+      !("geolocation" in navigator)
+    ) {
+      setState((s) => ({
+        ...s,
+        error: "Geolocalização não disponível",
+        loading: false,
+      }));
+      return;
+    }
+
+    setState((s) => ({ ...s, loading: true }));
+
+    const watcher = navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setState({
+          coords: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          error: null,
+          loading: false,
+        });
+      },
+      (err) => {
+        setState({ coords: null, error: err.message, loading: false });
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+
+    return () => {
+      // No watcher to clear for getCurrentPosition, kept for symmetry
+    };
+  }, [enable]);
+
+  return state;
+}
+
+```
+
+--- Caminho: frontend/src/hooks/useLocalStorage.ts ---
+```typescript
+import { useState, useEffect } from "react";
+
+export function useLocalStorage<T>(key: string, initialValue: T) {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const raw =
+        typeof window !== "undefined" ? localStorage.getItem(key) : null;
+      return raw ? (JSON.parse(raw) as T) : initialValue;
+    } catch {
+      return initialValue;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch {
+      // ignore
+    }
+  }, [key, state]);
+
+  return [state, setState] as const;
+}
+
+```
+
+--- Caminho: frontend/src/hooks/useSearch.ts ---
+```typescript
+import { useState } from "react";
+import type { ServiceSearchParams, Service } from "../types/services";
+import * as api from "../services/api";
+
+export function useSearch() {
+  const [loading, setLoading] = useState(false);
+  const [services, setServices] = useState<Service[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  async function search(params: ServiceSearchParams) {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.searchServices(params);
+      setServices(result.services ?? []);
+      return result;
+    } catch (err: any) {
+      setError(err?.message ?? "Erro na busca");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return {
+    loading,
+    services,
+    error,
+    search,
+    setServices,
+  };
+}
+
+```
+
+
+--- Caminho: frontend/src/services ---
+--- Caminho: frontend/src/services/api.ts ---
+```typescript
+import axios from "axios";
+import { API_ENDPOINTS } from "../utils/constants";
+import type { ServiceSearchParams } from "../types/services";
+
+const BACKEND = API_ENDPOINTS.BACKEND_BASE;
+
+const instance = axios.create({
+  baseURL: BACKEND,
+  timeout: 15000,
+});
+
+export async function searchServices(params: ServiceSearchParams) {
+  // Esperamos que o backend tenha um endpoint /services/search que aceite query params
+  // Caso não exista, este método pode ser adaptado para chamar endpoints individuais (viacep, nominatim, etc.)
+  try {
+    const resp = await instance.get("/services/search", { params });
+    return resp.data;
+  } catch (error) {
+    // fallback: se backend não existir, retornar mock ou lançar
+    throw error;
+  }
+}
+
+export async function getServiceDetails(id: number) {
+  try {
+    const resp = await instance.get(`/services/${id}`);
+    return resp.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+```
+
+--- Caminho: frontend/src/services/nominatim.ts ---
+```typescript
+import axios from "axios";
+import { API_ENDPOINTS } from "../utils/constants";
+
+export async function geocodeAddress(query: string) {
+  // Usa Nominatim diretamente
+  const url = API_ENDPOINTS.NOMINATIM;
+  try {
+    const resp = await axios.get(url, {
+      params: {
+        q: query,
+        format: "json",
+        addressdetails: 1,
+        limit: 5,
+      },
+      headers: {
+        "Accept-Language": "pt-BR",
+        "User-Agent": "logo-ali-app/1.0 (contato: )",
+      },
+    });
+
+    return resp.data; // array de resultados
+  } catch (error) {
+    throw error;
+  }
+}
+
+```
+
+--- Caminho: frontend/src/services/prefecture.ts ---
+```typescript
+import axios from "axios";
+import { API_ENDPOINTS } from "../utils/constants";
+
+/**
+ * Funções próximas à prefeitura / APILIB
+ * Observação: aqui fazemos chamadas para um endpoint backend hipotético /prefecture/*
+ * Caso seu backend implemente rotas específicas, adapte os paths abaixo.
+ */
+
+const BACKEND = API_ENDPOINTS.BACKEND_BASE;
+const client = axios.create({ baseURL: BACKEND, timeout: 15000 });
+
+export async function fetchServicesFromPrefecture(
+  lat: number,
+  lng: number,
+  serviceType?: string
+) {
+  try {
+    const resp = await client.get("/prefecture/services", {
+      params: { lat, lng, serviceType },
+    });
+    return resp.data;
+  } catch (error) {
+    // se backend não tiver, repassar erro para tratamento
+    throw error;
+  }
+}
+
+```
+
+--- Caminho: frontend/src/services/viacep.ts ---
+```typescript
+import axios from "axios";
+import { API_ENDPOINTS } from "../utils/constants";
+
+const VIACEP = API_ENDPOINTS.VIACEP;
+
+/**
+ * Tenta buscar pelo backend primeiro (caso tenha cache),
+ * senão busca direto no ViaCEP.
+ */
+export async function fetchCep(cep: string) {
+  // normaliza
+  const normalized = cep.replace(/\D/g, "");
+  try {
+    // tenta backend cache
+    const backendUrl =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3333/api"
+        : "/api";
+    const respBackend = await axios.get(`${backendUrl}/cep/${normalized}`);
+    return respBackend.data;
+  } catch {
+    // fallback direto para ViaCEP
+    const resp = await axios.get(`${VIACEP}/${normalized}/json/`);
+    if (resp.data.erro) throw new Error("CEP não encontrado");
+    return resp.data;
+  }
+}
+
+```
+
+
+--- Caminho: frontend/src/types ---
+--- Caminho: frontend/src/types/api.ts ---
+```typescript
+export interface NominatimResult {
+  place_id: number;
+  licence?: string;
+  osm_type?: string;
+  osm_id?: number;
+  boundingbox?: [string, string, string, string];
+  lat: string;
+  lon: string;
+  display_name: string;
+  class?: string;
+  type?: string;
+  importance?: number;
+  icon?: string;
+  address?: Record<string, any>;
+}
+
+export interface BackendServiceSearchResponse {
+  services: Array<any>;
+  total?: number;
+  meta?: Record<string, any>;
+}
+
+```
+
+--- Caminho: frontend/src/types/location.ts ---
+```typescript
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
+export interface Address {
+  street: string;
+  number?: string;
+  neighborhood?: string;
+  city: string;
+  state: string;
+  cep: string;
+  coordinates: Coordinates;
+}
+
+export interface ViaCepResponse {
+  cep: string;
+  logradouro: string;
+  complemento: string;
+  unidade: string;
+  bairro: string;
+  localidade: string;
+  uf: string;
+}
+
+```
+
+--- Caminho: frontend/src/types/services.ts ---
+```typescript
+export interface Service {
+  id: number;
+  type: string;
+  name: string;
+  address: string;
+  date: string;
+  time: string;
+  distance: string;
+  description: string;
+  coordinates: [number, number];
+  additionalInfo?: Record<string, any>;
+}
+
+export interface ServiceSearchParams {
+  street?: string;
+  streetNumber?: string;
+  cep?: string;
+  serviceType?: string;
+}
+
+export interface CacheStatus {
+  hit: boolean;
+  expired: boolean;
+  source: "cache" | "api";
+}
+
+```
+
+
+--- Caminho: frontend/src/utils ---
+--- Caminho: frontend/src/utils/constants.ts ---
+```typescript
+export const SAMPLE_STREETS = [
+  "Rua Augusta",
+  "Avenida Paulista",
+  "Rua Oscar Freire",
+  "Rua 25 de Março",
+  "Avenida Faria Lima",
+  "Rua da Consolação",
+  "Largo do Arouche",
+  "Rua Direita",
+  "Avenida São João",
+  "Rua Barão de Itapetininga",
+  "Rua do Carmo",
+  "Praça da Sé",
+  "Avenida Rebouças",
+  "Rua Haddock Lobo",
+  "Rua Estados Unidos",
+];
+
+export const SERVICE_TYPES = [
+  { value: "coleta-lixo", label: "Coleta de Lixo" },
+  { value: "cata-bagulho", label: "Cata-Bagulho" },
+  { value: "saude", label: "Saúde Pública" },
+  { value: "vacinacao", label: "Vacinação" },
+  { value: "bem-estar-animal", label: "Bem-estar Animal" },
+  { value: "zeladoria", label: "Zeladoria Urbana" },
+  { value: "iluminacao", label: "Iluminação Pública" },
+  { value: "poda-arvores", label: "Poda de Árvores" },
+];
+
+export const SERVICE_ICONS = {
+  "coleta-lixo": "🗑️",
+  "cata-bagulho": "🚛",
+  saude: "🏥",
+  vacinacao: "💉",
+  "bem-estar-animal": "🐕",
+  zeladoria: "🔧",
+  iluminacao: "💡",
+  "poda-arvores": "🌳",
+};
+
+export const API_ENDPOINTS = {
+  VIACEP: "https://viacep.com.br/ws",
+  NOMINATIM: "https://nominatim.openstreetmap.org/search",
+  BACKEND_BASE:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3333/api"
+      : "/api",
+};
+
+```
+
+--- Caminho: frontend/src/utils/formatters.ts ---
+```typescript
+export function formatDistanceMetersToKm(distanceMeters?: number | string) {
+  if (distanceMeters == null) return "—";
+  const val =
+    typeof distanceMeters === "string"
+      ? Number(distanceMeters)
+      : distanceMeters;
+  if (isNaN(val)) return "—";
+  if (val < 1000) return `${Math.round(val)} m`;
+  return `${(val / 1000).toFixed(1)} km`;
+}
+
+export function formatDateISO(dateIso?: string) {
+  if (!dateIso) return "—";
+  try {
+    const d = new Date(dateIso);
+    return d.toLocaleDateString("pt-BR");
+  } catch {
+    return dateIso;
+  }
+}
+
+export function formatTimeISO(dateIso?: string) {
+  if (!dateIso) return "—";
+  try {
+    const d = new Date(dateIso);
+    return d.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return dateIso;
+  }
+}
+
+export function formatCep(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length <= 5) return digits;
+  return digits.substring(0, 5) + "-" + digits.substring(5, 8);
+}
+
+```
+
+--- Caminho: frontend/src/utils/helpers.ts ---
+```typescript
+/**
+ * Distância entre dois pontos em metros (Haversine)
+ */
+export function haversineDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) {
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const R = 6371000; // metros
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Small helpers
+ */
+export function clamp(num: number, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, num));
+}
+
+export function isValidLatLng(lat?: number, lng?: number) {
+  if (typeof lat !== "number" || typeof lng !== "number") return false;
+  if (Number.isNaN(lat) || Number.isNaN(lng)) return false;
+  if (lat < -90 || lat > 90) return false;
+  if (lng < -180 || lng > 180) return false;
+  return true;
+}
+
+```
+
+--- Caminho: frontend/src/utils/validators.ts ---
+```typescript
+export function validateCep(cep: string): boolean {
+  return /^\d{5}-\d{3}$/.test(cep);
+}
+
+export function formatCep(value: string): string {
+  let formatted = value.replace(/\D/g, "");
+  if (formatted.length > 5) {
+    formatted = formatted.substring(0, 5) + "-" + formatted.substring(5, 8);
+  }
+  return formatted;
+}
+
+export function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+export function validatePhone(phone: string): boolean {
+  const cleaned = phone.replace(/\D/g, "");
+  return cleaned.length >= 10 && cleaned.length <= 11;
+}
+
+```
+
+
+
+--- Caminho: frontend/tailwind.config.ts ---
+```typescript
 
 ```
 
 
 --- Caminho: gerar_estrutura.ts ---
 ```typescript
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 // Define o caminho raiz do projeto
 // Use barras duplas para Windows para garantir que o path.join funcione corretamente
-const rootPath: string = 'C:\\workspace\\Meus Projetos\\LogoAli\\logo-ali'; 
+const rootPath: string = "C:\\workspace\\Meus Projetos\\LogoAli\\logo-ali";
 
 // Define os tipos de arquivo cujo conteúdo deve ser incluído
 const contentFileTypes: string[] = [
-    '.json', '.ts', '.js', '.sql',
-    'Dockerfile', '.yml', '.env', '.md',
-    '.prettierignore', '.gitignore',
-    // Usamos path.join para garantir compatibilidade com o sistema de arquivos
-    path.join('.vscode', 'settings.json') 
+  ".json",
+  ".ts",
+  ".js",
+  ".sql",
+  "Dockerfile",
+  ".yml",
+  ".env",
+  ".md",
+  ".prettierignore",
+  ".gitignore",
+  // Usamos path.join para garantir compatibilidade com o sistema de arquivos
+  path.join(".vscode", "settings.json"),
 ];
 
 // Define os padrões de exclusão (pastas e arquivos que não devem ser incluídos)
-const exclusions: RegExp = /(node_modules|package-lock\.json|\.bin|@types|node16|\.next)/;
+const exclusionList = [
+  "node_modules",
+  "package-lock\\.json",
+  "pnpm-lock\\.yaml",
+  "yarn\\.lock",
+  "\\.git",
+  "\\.gitignore",
+  "\\.gitattributes",
+  "\\.vscode",
+  "\\.prettierignore",
+  "\\.prettierrc.*",
+  "tsconfig\\.json",
+  "jsconfig\\.json",
+  "vite\\.config\\..*",
+  "webpack\\.config\\..*",
+  "\\.env.*",
+  "\\.eslint.*",
+  "\\.stylelint.*",
+  "\\.bin",
+  "@types",
+  "node16",
+  "\\.next",
+  "dist",
+  "build",
+  "coverage",
+  "test-results",
+  "__tests__",
+  "README\\.md",
+  "gerar_estruturas",
+  "estrutura_e_sctripts_completa",
+];
+
+const exclusions: RegExp = new RegExp(`(${exclusionList.join("|")})`);
 
 // Define o nome do arquivo de saída
-const outputFile: string = path.join(rootPath, 'estrutura_e_scripts_completa.txt');
+const outputFile: string = path.join(
+  rootPath,
+  "estrutura_e_scripts_completa.txt"
+);
 
 // Função para obter a linguagem para o bloco de código Markdown
 function getLanguage(filename: string, relativePath: string): string {
-    const ext: string = path.extname(filename);
-    switch (ext) {
-        case '.json': return 'json';
-        case '.ts': return 'typescript';
-        case '.js': return 'javascript';
-        case '.sql': return 'sql';
-        case '.yml': return 'yaml';
-        case '.md': return 'markdown';
-        default:
-            if (filename === 'Dockerfile') return 'dockerfile';
-            // Usa startsWith para cobrir .env, .env.development, etc.
-            if (filename.startsWith('.env')) return 'plaintext'; 
-            if (filename === '.prettierignore' || filename === '.gitignore') return 'plaintext';
-            // Verifica o caminho relativo para settings.json para ser mais específico
-            if (relativePath === path.join('.vscode', 'settings.json').replace(/\\/g, '/')) return 'json';
-            return 'plaintext';
-    }
+  const ext: string = path.extname(filename);
+  switch (ext) {
+    case ".json":
+      return "json";
+    case ".ts":
+      return "typescript";
+    case ".js":
+      return "javascript";
+    case ".sql":
+      return "sql";
+    case ".yml":
+      return "yaml";
+    case ".md":
+      return "markdown";
+    default:
+      if (filename === "Dockerfile") return "dockerfile";
+      // Usa startsWith para cobrir .env, .env.development, etc.
+      if (filename.startsWith(".env")) return "plaintext";
+      if (filename === ".prettierignore" || filename === ".gitignore")
+        return "plaintext";
+      // Verifica o caminho relativo para settings.json para ser mais específico
+      if (
+        relativePath ===
+        path.join(".vscode", "settings.json").replace(/\\/g, "/")
+      )
+        return "json";
+      return "plaintext";
+  }
 }
 
 // Limpa o conteúdo do arquivo de saída se ele já existir
 // Garante codificação UTF-8 para evitar problemas de caracteres
-fs.writeFileSync(outputFile, 'Estrutura de pastas e arquivos com conteúdo:\r\n', { encoding: 'utf8' });
+fs.writeFileSync(
+  outputFile,
+  "Estrutura de pastas e arquivos com conteúdo:\r\n",
+  { encoding: "utf8" }
+);
 
 // Função recursiva para percorrer diretórios
 function processDirectory(dirPath: string, depth: number): void {
-    // Limita a profundidade para evitar loops infinitos ou excesso de arquivos
-    if (depth > 4) { 
-        return;
+  // Limita a profundidade para evitar loops infinitos ou excesso de arquivos
+  if (depth > 4) {
+    return;
+  }
+
+  let items: fs.Dirent[];
+  try {
+    items = fs.readdirSync(dirPath, { withFileTypes: true });
+  } catch (error: any) {
+    // Usamos 'any' para o tipo de erro para compatibilidade
+    // Loga erro se não conseguir ler o diretório (ex: permissão negada)
+    console.error(`Erro ao ler diretório '${dirPath}': ${error.message}`);
+    return;
+  }
+
+  for (const item of items) {
+    const fullPath: string = path.join(dirPath, item.name);
+    // Normaliza o caminho para garantir que as barras sejam consistentes (Windows/Linux)
+    const relativePath: string = fullPath
+      .replace(rootPath, "")
+      .replace(/^[\\\/]/, "")
+      .replace(/\\/g, "/");
+
+    // Testa exclusões usando o caminho relativo normalizado
+    if (exclusions.test(relativePath)) {
+      continue; // Ignora itens que correspondem aos padrões de exclusão
     }
 
-    let items: fs.Dirent[];
-    try {
-        items = fs.readdirSync(dirPath, { withFileTypes: true });
-    } catch (error: any) { // Usamos 'any' para o tipo de erro para compatibilidade
-        // Loga erro se não conseguir ler o diretório (ex: permissão negada)
-        console.error(`Erro ao ler diretório '${dirPath}': ${error.message}`);
-        return;
-    }
+    // Adiciona o caminho do arquivo/pasta ao arquivo de saída
+    fs.appendFileSync(outputFile, `--- Caminho: ${relativePath} ---\r\n`, {
+      encoding: "utf8",
+    });
 
-    for (const item of items) {
-        const fullPath: string = path.join(dirPath, item.name);
-        // Normaliza o caminho para garantir que as barras sejam consistentes (Windows/Linux)
-        const relativePath: string = fullPath.replace(rootPath, '').replace(/^[\\\/]/, '').replace(/\\/g, '/');
-
-        // Testa exclusões usando o caminho relativo normalizado
-        if (exclusions.test(relativePath)) {
-            continue; // Ignora itens que correspondem aos padrões de exclusão
+    if (item.isDirectory()) {
+      processDirectory(fullPath, depth + 1); // Continua recursivamente para subdiretórios
+    } else {
+      // Se for um arquivo, verifica se o conteúdo deve ser incluído
+      let includeContent: boolean = false;
+      for (const type of contentFileTypes) {
+        // Ajusta a lógica de correspondência para ser mais robusta
+        // Verifica se o caminho relativo termina com o tipo, ou se o nome do item é o tipo
+        // ou se o tipo contém curingas e corresponde ao nome do item
+        if (
+          relativePath.endsWith(type) ||
+          item.name === type ||
+          (type.includes("*") &&
+            item.name.match(new RegExp(type.replace(/\*/g, ".*"))))
+        ) {
+          includeContent = true;
+          break;
         }
+      }
 
-        // Adiciona o caminho do arquivo/pasta ao arquivo de saída
-        fs.appendFileSync(outputFile, `--- Caminho: ${relativePath} ---\r\n`, { encoding: 'utf8' });
+      // Tratamento específico para .vscode/settings.json, garantindo que seja incluído
+      if (
+        relativePath ===
+        path.join(".vscode", "settings.json").replace(/\\/g, "/")
+      ) {
+        includeContent = true;
+      }
 
-        if (item.isDirectory()) {
-            processDirectory(fullPath, depth + 1); // Continua recursivamente para subdiretórios
-        } else {
-            // Se for um arquivo, verifica se o conteúdo deve ser incluído
-            let includeContent: boolean = false;
-            for (const type of contentFileTypes) {
-                // Ajusta a lógica de correspondência para ser mais robusta
-                // Verifica se o caminho relativo termina com o tipo, ou se o nome do item é o tipo
-                // ou se o tipo contém curingas e corresponde ao nome do item
-                if (relativePath.endsWith(type) || item.name === type || (type.includes('*') && item.name.match(new RegExp(type.replace(/\*/g, '.*'))))) {
-                    includeContent = true;
-                    break;
-                }
-            }
-
-            // Tratamento específico para .vscode/settings.json, garantindo que seja incluído
-            if (relativePath === path.join('.vscode', 'settings.json').replace(/\\/g, '/')) {
-                includeContent = true;
-            }
-
-            if (includeContent) {
-                try {
-                    // Lê o conteúdo do arquivo
-                    let fileContent: string = fs.readFileSync(fullPath, { encoding: 'utf8' });
-                    // Garante que fileContent é uma string, mesmo que o arquivo esteja vazio
-                    if (typeof fileContent !== 'string') {
-                        fileContent = String(fileContent);
-                    }
-                    const language: string = getLanguage(item.name, relativePath);
-                    fs.appendFileSync(outputFile, `\`\`\`${language}\r\n`, { encoding: 'utf8' });
-                    fs.appendFileSync(outputFile, fileContent + '\r\n', { encoding: 'utf8' });
-                    fs.appendFileSync(outputFile, '```\r\n', { encoding: 'utf8' });
-                } catch (error: any) { // Usamos 'any' para o tipo de erro para compatibilidade
-                    // Loga o erro no console e no arquivo de saída
-                    console.error(`Erro ao ler o conteúdo do arquivo '${relativePath}': ${error.message}`);
-                    fs.appendFileSync(outputFile, `\`\`\`plaintext\r\n`, { encoding: 'utf8' });
-                    fs.appendFileSync(outputFile, `Erro ao ler o conteúdo do arquivo '${relativePath}': ${error.message}\r\n`, { encoding: 'utf8' });
-                    fs.appendFileSync(outputFile, '```\r\n', { encoding: 'utf8' });
-                }
-            }
+      if (includeContent) {
+        try {
+          // Lê o conteúdo do arquivo
+          let fileContent: string = fs.readFileSync(fullPath, {
+            encoding: "utf8",
+          });
+          // Garante que fileContent é uma string, mesmo que o arquivo esteja vazio
+          if (typeof fileContent !== "string") {
+            fileContent = String(fileContent);
+          }
+          const language: string = getLanguage(item.name, relativePath);
+          fs.appendFileSync(outputFile, `\`\`\`${language}\r\n`, {
+            encoding: "utf8",
+          });
+          fs.appendFileSync(outputFile, fileContent + "\r\n", {
+            encoding: "utf8",
+          });
+          fs.appendFileSync(outputFile, "```\r\n", { encoding: "utf8" });
+        } catch (error: any) {
+          // Usamos 'any' para o tipo de erro para compatibilidade
+          // Loga o erro no console e no arquivo de saída
+          console.error(
+            `Erro ao ler o conteúdo do arquivo '${relativePath}': ${error.message}`
+          );
+          fs.appendFileSync(outputFile, `\`\`\`plaintext\r\n`, {
+            encoding: "utf8",
+          });
+          fs.appendFileSync(
+            outputFile,
+            `Erro ao ler o conteúdo do arquivo '${relativePath}': ${error.message}\r\n`,
+            { encoding: "utf8" }
+          );
+          fs.appendFileSync(outputFile, "```\r\n", { encoding: "utf8" });
         }
-        // Adiciona uma linha vazia para melhor separação visual entre os itens
-        fs.appendFileSync(outputFile, '\r\n', { encoding: 'utf8' }); 
+      }
     }
+    // Adiciona uma linha vazia para melhor separação visual entre os itens
+    fs.appendFileSync(outputFile, "\r\n", { encoding: "utf8" });
+  }
 }
 
 // Inicia o processo a partir da raiz
 processDirectory(rootPath, 0);
 
 console.log(`✅ Estrutura e conteúdo dos scripts salvos em ${outputFile}`);
+
 ```
 
 --- Caminho: infra ---
@@ -1558,10 +1954,10 @@ services:
       - "3000:3000"
     volumes:
       - ../frontend:/app
-      - /app/node_modules # Garante que node_modules seja um volume separado para hot-reloading
+      - /app/node_modules
     environment:
       NODE_ENV: development
-    command: npm run dev # Comando para iniciar o Next.js em modo de desenvolvimento
+    command: npm run dev
 
   logo-ali-back:
     build:
@@ -1570,39 +1966,43 @@ services:
     ports:
       - "3333:3333"
     volumes:
-      - ../backend:/app # Mapeia o código fonte do backend para o container
-      - /app/node_modules # Garante que node_modules seja um volume separado para hot-reloading
+      - ../backend:/app
+      - /app/node_modules
     environment:
       NODE_ENV: development
-    env_file:
-      - ../.env.development # Carrega variáveis de ambiente do arquivo .env.development
+      POSTGRES_HOST: logo-ali-db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: admin
+      POSTGRES_DB: logo_ali_db
+      POSTGRES_PASSWORD: admin
+      BACKEND_PORT: 3333
     depends_on:
       logo-ali-db:
-        condition: service_healthy # Garante que o backend só inicie quando o DB estiver saudável
-    # Comando para aguardar o DB e iniciar o backend em modo de desenvolvimento com ts-node
+        condition: service_healthy
     command: sh -c "dockerize -wait tcp://logo-ali-db:5432 -timeout 30s npm run dev"
 
   logo-ali-db:
-    image: postgres:17.4-alpine3.21 # Versão específica do PostgreSQL
-    container_name: logo-ali-db # Nome explícito para o container
-    env_file:
-      - ../.env.development # Mantém o env_file para outras variáveis
-    environment: # <-- ADICIONADO: Define variáveis críticas diretamente
-      POSTGRES_USER: admin # <-- Confirme este usuário
-      POSTGRES_DB: logo_ali_db # <-- Confirme este nome de DB
-      POSTGRES_PASSWORD: admin # <-- SUBSTITUA PELA SUA SENHA REAL AQUI!
+    image: postgres:17.4-alpine3.21
+    container_name: logo-ali-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_DB: logo_ali_db
+      POSTGRES_PASSWORD: admin
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     ports:
-      - "5434:5432" # Mapeia a porta 5434 do host para a porta 5432 do container
+      - "5434:5432"
     volumes:
-      - pgdata_logo-ali:/var/lib/postgresql/data # Volume persistente para os dados do DB
-    healthcheck: # Verifica a saúde do banco de dados
-      test: ["CMD-SHELL", "pg_isready -U admin -d logo_ali_db"] # Use o usuário e DB reais aqui
+      - pgdata_logo-ali:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d logo_ali_db"]
       interval: 5s
       timeout: 5s
       retries: 5
+    command:
+      ["postgres", "-c", "log_statement=all", "-c", "log_destination=stderr"]
 
 volumes:
-  pgdata_logo-ali: # Definição do volume persistente para o banco de dados
+  pgdata_logo-ali:
 
 ```
 
@@ -1618,90 +2018,26 @@ volumes:
     "lint:check": "prettier --check .",
     "lint:fix": "prettier --write .",
     "generate:structure": "npx ts-node gerar_estrutura.ts",
-    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up"
+    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up",
+    "dev": "concurrently \"npm run dev --prefix frontend\" \"npm run dev --prefix backend\""
   },
   "devDependencies": {
     "@types/node": "^24.2.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
+    "concurrently": "^9.2.0",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.3",
     "prettier": "^3.6.2"
-  }
-}
-
-```
-
---- Caminho: README.md ---
-```markdown
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-#   l o g o - a l i 
- 
- 
-
-```
-
---- Caminho: tsconfig.json ---
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022", // Versão moderna do JavaScript
-    "module": "CommonJS", // Tipo de módulo para Node.js
-    "esModuleInterop": true, // Permite import/require misturados
-    "forceConsistentCasingInFileNames": true, // Garante consistência de maiúsculas/minúsculas nos nomes de arquivos
-    "strict": true, // Ativa todas as verificações de tipo rigorosas
-    "skipLibCheck": true, // Ignora verificações de tipo de arquivos de declaração
-    "outDir": "./dist", // Onde os arquivos compilados serão colocados (não é usado pelo ts-node, mas é um bom padrão)
-    "rootDir": ".", // O diretório raiz dos arquivos TypeScript
-    "resolveJsonModule": true // Permite importar arquivos .json
   },
-  "include": [
-    "gerar_estrutura.ts", // Inclui explicitamente o seu script
-    "**/*.ts" // Inclui todos os arquivos .ts no projeto, se necessário para outras ferramentas
-  ],
-  "exclude": [
-    "node_modules", // Exclui a pasta node_modules
-    "backend/node_modules",
-    "frontend/node_modules",
-    "**/*.spec.ts", // Exclui arquivos de teste
-    "dist" // Exclui a pasta de saída
-  ]
+  "dependencies": {
+    "axios": "^1.11.0",
+    "leaflet": "^1.9.4",
+    "react-icons": "^5.5.0",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.8.0"
+  }
 }
 
 ```

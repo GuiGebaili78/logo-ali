@@ -16,7 +16,7 @@
   ],
   "exclude": [
     "node_modules", // Exclui a pasta node_modules
-    "backend/node_modules",
+    "Button/node_modules",
     "frontend/node_modules",
     "**/*.spec.ts", // Exclui arquivos de teste
     "dist" // Exclui a pasta de saída
