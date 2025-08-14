@@ -1,25 +1,21 @@
 import axios from "axios";
 import { API_ENDPOINTS } from "../utils/constants";
+import { NominatimResult } from "../types/api";
 
-export async function geocodeAddress(query: string) {
-  // Usa Nominatim diretamente
+export async function geocodeAddress(query: string): Promise<NominatimResult[]> {
   const url = API_ENDPOINTS.NOMINATIM;
   try {
-    const resp = await axios.get(url, {
+    const { data } = await axios.get(url, {
       params: {
         q: query,
         format: "json",
-        addressdetails: 1,
-        limit: 5,
+        limit: 1, // Queremos apenas o resultado mais provável
       },
-      headers: {
-        "Accept-Language": "pt-BR",
-        "User-Agent": "logo-ali-app/1.0 (contato: )",
-      },
+      headers: { 'Accept-Language': 'pt-BR' },
     });
-
-    return resp.data; // array de resultados
+    return data;
   } catch (error) {
-    throw error;
+    console.error("Erro na geocodificação:", error);
+    throw new Error("Não foi possível converter o endereço em coordenadas.");
   }
 }

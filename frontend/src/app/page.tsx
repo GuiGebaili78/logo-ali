@@ -1,51 +1,28 @@
-"use client";
+"use client"
 
-import React, { useState } from "react";
-import Layout from "../components/layout/Layout";
-import SearchBar from "../components/search/SearchBar";
-import ServiceSelector from "../components/search/ServiceSelector";
-import ServiceList from "../components/services/ServicesList";
-import MapView from "../components/map/MapView";
-import { AppProvider } from "../context/AppContext";
+import SearchBar from "@/components/search/SearchBar";
+import { useAppContext } from "@/context/AppContext";
+import { ViaCepResponse } from "@/types/location";
 
-export default function HomePage() {
+// Criamos um client component para poder usar o hook useAppContext
+function HomePageClient() {
+  const { isLoading, error } = useAppContext();
+
   return (
-    <AppProvider>
-      <Layout>
-        <div className="max-w-7xl mx-auto">
-          {/* Hero Section */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-[var(--primary-color)] mb-6">
-              Serviços Públicos de São Paulo
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Encontre serviços públicos próximos ao seu endereço: coleta de
-              lixo, cata-bagulho, saúde, vacinação, bem-estar animal e muito
-              mais.
-            </p>
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid lg:grid-cols-2 gap-8 mb-8">
-            {/* Search Section */}
-            <div className="space-y-6">
-              <SearchBar />
-              <ServiceList services={[]} />
-            </div>
-
-            {/* Map Section */}
-            <div className="lg:sticky lg:top-8 h-fit">
-              <MapView
-                center={null}
-                services={[]}
-                onServiceSelect={function (serviceId: number): void {
-                  throw new Error("Function not implemented.");
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </Layout>
-    </AppProvider>
+    <div className="flex flex-col items-center justify-center h-full">
+      <div className="text-center w-full">
+        <h1 className="text-4xl font-bold mb-2 text-[var(--light-color)]">Encontre o que precisa, bem aí.</h1>
+        <p className="mb-8 text-lg text-gray-300">Seu guia de serviços públicos em São Paulo.</p>
+        <SearchBar onSearch={function (data: { cep: string; address: ViaCepResponse; coordinates: { lat: number; lng: number; }; serviceType: string; }): void {
+          throw new Error("Function not implemented.");
+        } } />
+        {isLoading && <p className="mt-4 animate-pulse">Buscando...</p>}
+        {error && <div className="mt-4 p-3 bg-red-900 border border-red-700 text-white rounded-lg">{error}</div>}
+      </div>
+    </div>
   );
+}
+
+export default function Home() {
+  return <HomePageClient />;
 }

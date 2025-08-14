@@ -51,12 +51,12 @@ CMD ["dockerize", "-wait", "tcp://logo-ali-db:5432", "-timeout", "30s", "node", 
   "description": "API Backend para LogoAli - Serviços Públicos SP",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc",
     "start": "node ./dist/index.js",
     "dev": "ts-node src/index.ts",
     "dev:watch": "nodemon --exec ts-node src/index.ts",
-    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up"
+    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up",
+    "docker:reset": "docker-compose -f ../infra/docker-compose.yml down -v && docker system prune -a --volumes -f && docker-compose -f ../infra/docker-compose.yml build --no-cache && docker-compose -f ../infra/docker-compose.yml up -d && npm run migrate:up && npm run dev"
   },
   "keywords": [
     "viacep",
@@ -69,6 +69,8 @@ CMD ["dockerize", "-wait", "tcp://logo-ali-db:5432", "-timeout", "30s", "node", 
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0-rc.12",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "pg": "^8.16.3"
@@ -87,183 +89,100 @@ CMD ["dockerize", "-wait", "tcp://logo-ali-db:5432", "-timeout", "30s", "node", 
 
 --- Caminho: backend/src ---
 --- Caminho: backend/src/controllers ---
+--- Caminho: backend/src/controllers/cataBagulhoController.ts ---
+```typescript
+import { Request, Response } from "express";
+import { CataBagulhoService } from "../services/cataBagulhoService";
+
+export class CataBagulhoController {
+  private cataBagulhoService: CataBagulhoService;
+
+  constructor() {
+    this.cataBagulhoService = new CataBagulhoService();
+  }
+
+  public search = async (req: Request, res: Response): Promise<void> => {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      res.status(400).json({ error: "Latitude (lat) e Longitude (lng) são obrigatórias." });
+      return;
+    }
+
+    try {
+      const latitude = parseFloat(lat as string);
+      const longitude = parseFloat(lng as string);
+      const results = await this.cataBagulhoService.search(latitude, longitude);
+      res.status(200).json({ data: results });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  };
+}
+```
+
 --- Caminho: backend/src/controllers/viacepController.ts ---
 ```typescript
 import { Request, Response } from "express";
 import { ViaCepService } from "../services/viacepService";
+import { ViaCepResponse } from "../types/viacep";
+
 export class ViaCepController {
-  private viaCepService: ViaCepService;
+  private viaCepService = new ViaCepService();
 
-  constructor() {
-    this.viaCepService = new ViaCepService();
-  }
-
-  /**
-   * GET /api/cep/:cep
-   * Busca informações de um CEP
-   */
-  public getCep = async (req: Request, res: Response): Promise<void> => {
+  public getCep = async (req: Request, res: Response) => {
     try {
       const { cep } = req.params;
-
       if (!cep) {
-        res.status(400).json({
-          error: "CEP é obrigatório",
-          message: "Informe um CEP válido na URL",
-        });
-        return;
+        return res.status(400).json({ success: false, message: "CEP é obrigatório" });
       }
-
-      const startTime = Date.now();
-      const result = await this.viaCepService.getCep(cep);
-      const responseTime = Date.now() - startTime;
-
-      res.status(200).json({
-        success: true,
-        data: {
-          cep: result.cep,
-          logradouro: result.logradouro,
-          complemento: result.complemento,
-          unidade: result.unidade,
-          bairro: result.bairro,
-          localidade: result.localidade,
-          uf: result.uf,
-        },
-        meta: {
-          cache: result.cacheStatus,
-          responseTime: `${responseTime}ms`,
-          timestamp: new Date().toISOString(),
-        },
-      });
+      const data = await this.viaCepService.buscarEnderecoPorCep(cep);
+      return res.status(200).json({ success: true, data });
     } catch (error: any) {
-      console.error("Erro no controller ViaCEP:", error);
-
-      res.status(400).json({
-        success: false,
-        error: "Erro ao buscar CEP",
-        message: error.message,
-        timestamp: new Date().toISOString(),
-      });
+      console.error("[ViaCepController:getCep] Erro:", error?.message || error);
+      return res.status(500).json({ success: false, message: "Erro ao buscar CEP" });
     }
   };
 
-  /**
-   * GET /api/cep/cache/stats
-   * Retorna estatísticas do cache
-   */
-  public getCacheStats = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const stats = await this.viaCepService.getCacheStats();
+  public getCacheStats = (_req: Request, res: Response) => {
+    const stats = this.viaCepService.getCacheStats();
+    return res.status(200).json({ success: true, data: stats });
+  };
 
-      res.status(200).json({
-        success: true,
-        data: {
-          cache_stats: stats,
-          cache_ttl_hours: 24,
-          timestamp: new Date().toISOString(),
-        },
-      });
-    } catch (error: any) {
-      console.error("Erro ao obter estatísticas do cache:", error);
-
-      res.status(500).json({
-        success: false,
-        error: "Erro ao obter estatísticas do cache",
-        message: error.message,
-        timestamp: new Date().toISOString(),
-      });
-    }
+  public clearExpiredCache = (_req: Request, res: Response) => {
+    const result = this.viaCepService.clearExpiredCache();
+    return res.status(200).json({ success: true, data: result });
   };
 
   /**
-   * DELETE /api/cep/cache/expired
-   * Remove registros expirados do cache
-   */
-  public clearExpiredCache = async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
-    try {
-      const deletedCount = await this.viaCepService.clearExpiredCache();
-
-      res.status(200).json({
-        success: true,
-        message: `${deletedCount} registros expirados removidos do cache`,
-        data: {
-          deleted_records: deletedCount,
-          timestamp: new Date().toISOString(),
-        },
-      });
-    } catch (error: any) {
-      console.error("Erro ao limpar cache:", error);
-
-      res.status(500).json({
-        success: false,
-        error: "Erro ao limpar cache expirado",
-        message: error.message,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  };
-
-  /**
+   * Endpoint de teste para popular o cache com dados fake.
    * POST /api/cep/test/fake
-   * Endpoint para testar com dados fake (sem frontend)
+   * body: { cep: "01001000", data?: ViaCepResponse }
    */
-  public testWithFakeData = async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
+  public testWithFakeData = (req: Request, res: Response) => {
     try {
-      const testCeps = [
-        "01001-000", // Praça da Sé
-        "04038-001", // Vila Olímpia
-        "01310-100", // Av. Paulista
-        "08540-226", // Ferraz de Vasconcelos
-        "01234-567", // CEP fake para testar erro
-      ];
-
-      const results = [];
-
-      for (const testCep of testCeps) {
-        try {
-          const startTime = Date.now();
-          const result = await this.viaCepService.getCep(testCep);
-          const responseTime = Date.now() - startTime;
-
-          results.push({
-            cep: testCep,
-            success: true,
-            data: result,
-            responseTime: `${responseTime}ms`,
-          });
-        } catch (error: any) {
-          results.push({
-            cep: testCep,
-            success: false,
-            error: error.message,
-          });
-        }
+      const { cep, data } = req.body as { cep?: string; data?: ViaCepResponse };
+      if (!cep) {
+        return res.status(400).json({ success: false, message: "Informe um CEP no corpo da requisição." });
       }
 
-      res.status(200).json({
-        success: true,
-        message: "Teste com dados fake concluído",
-        data: {
-          total_tests: testCeps.length,
-          results: results,
-          timestamp: new Date().toISOString(),
-        },
-      });
-    } catch (error: any) {
-      console.error("Erro no teste fake:", error);
+      // Dados padrão se não enviar "data"
+      const fake: ViaCepResponse =
+        data || {
+          cep: "01001-000",
+          logradouro: "Praça da Sé",
+          complemento: "lado ímpar",
+          unidade: "",
+          bairro: "Sé",
+          localidade: "São Paulo",
+          uf: "SP",
+        };
 
-      res.status(500).json({
-        success: false,
-        error: "Erro ao executar teste fake",
-        message: error.message,
-        timestamp: new Date().toISOString(),
-      });
+      const r = this.viaCepService.seedCache(cep, fake);
+      return res.status(200).json({ success: true, data: { ...r, fake } });
+    } catch (error: any) {
+      console.error("[ViaCepController:testWithFakeData] Erro:", error?.message || error);
+      return res.status(500).json({ success: false, message: "Erro ao inserir dados fake no cache" });
     }
   };
 }
@@ -385,6 +304,37 @@ COMMENT ON TABLE viacep_cache IS 'Cache para dados do ViaCEP com TTL de 24 horas
 COMMENT ON COLUMN viacep_cache.cep IS 'CEP no formato 00000-000';
 COMMENT ON COLUMN viacep_cache.expires_at IS 'Data/hora de expiração do cache';
 COMMENT ON COLUMN viacep_cache.cached_at IS 'Quando foi armazenado no cache';
+```
+
+--- Caminho: backend/src/database/migrations/003_create_catabagulho_cache.sql ---
+```sql
+-- Migração para criar a tabela de cache do serviço Cata-Bagulho
+-- Arquivo: backend/src/database/migrations/003_create_catabagulho_cache.sql
+
+CREATE TABLE IF NOT EXISTS catabagulho_cache (
+  id SERIAL PRIMARY KEY,
+  latitude DECIMAL(10, 8) NOT NULL,
+  longitude DECIMAL(11, 8) NOT NULL,
+  results JSONB NOT NULL,
+  cached_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+-- Índice para otimizar a busca por coordenadas e data de expiração
+CREATE INDEX IF NOT EXISTS idx_catabagulho_cache_coords ON catabagulho_cache(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_catabagulho_cache_expires ON catabagulho_cache(expires_at);
+
+-- Adiciona um índice único para evitar duplicatas exatas de coordenadas
+-- Isso garante que para um par (lat, lng) só haverá um registro de cache por vez
+ALTER TABLE catabagulho_cache
+ADD CONSTRAINT unique_coords_catabagulho UNIQUE (latitude, longitude);
+
+
+COMMENT ON TABLE catabagulho_cache IS 'Cache para os resultados do web scraping do serviço Cata-Bagulho, com TTL de 24 horas.';
+COMMENT ON COLUMN catabagulho_cache.latitude IS 'Latitude da busca original.';
+COMMENT ON COLUMN catabagulho_cache.longitude IS 'Longitude da busca original.';
+COMMENT ON COLUMN catabagulho_cache.results IS 'Resultados da busca em formato JSON.';
+COMMENT ON COLUMN catabagulho_cache.expires_at IS 'Data e hora de expiração do registro de cache.';
 ```
 
 --- Caminho: backend/src/database/migrations/migrate.ts ---
@@ -543,6 +493,7 @@ import path from "path";
 import db from "./database/database";
 import { runMigrations } from "./database/migrations/migrate";
 import viaCepRoutes from "./routes/viacepRoutes";
+import cataBagulhoRoutes from "./routes/cataBagulhoRoutes"; // <
 
 // Carrega variáveis de ambiente
 dotenv.config({
@@ -678,6 +629,8 @@ async function startServer() {
 
     // Registrar rotas do ViaCEP
     app.use("/api", viaCepRoutes);
+    app.use("/api", cataBagulhoRoutes);
+
 
     // CORRIGIDO: Middleware para rotas não encontradas - removido o "*"
     app.use((req, res) => {
@@ -724,6 +677,19 @@ startServer();
 ```
 
 --- Caminho: backend/src/routes ---
+--- Caminho: backend/src/routes/cataBagulhoRoutes.ts ---
+```typescript
+import { Router } from "express";
+import { CataBagulhoController } from "../controllers/cataBagulhoController";
+
+const router = Router();
+const controller = new CataBagulhoController();
+
+router.get("/cata-bagulho", controller.search);
+
+export default router;
+```
+
 --- Caminho: backend/src/routes/viacepRoutes.ts ---
 ```typescript
 import { Router } from "express";
@@ -733,10 +699,8 @@ const router = Router();
 const viaCepController = new ViaCepController();
 
 router.post("/cep/test/fake", viaCepController.testWithFakeData);
-
 router.get("/cep/cache/stats", viaCepController.getCacheStats);
 router.delete("/cep/cache/expired", viaCepController.clearExpiredCache);
-
 router.get("/cep/:cep", viaCepController.getCep);
 
 export default router;
@@ -745,31 +709,300 @@ export default router;
 
 
 --- Caminho: backend/src/services ---
---- Caminho: backend/src/services/viacepService.ts ---
+--- Caminho: backend/src/services/cataBagulhoService.ts ---
 ```typescript
+import axios from "axios";
+import * as cheerio from "cheerio";
 import db from "../database/database";
-import {
-  ViaCepResponse,
-  ViaCepCacheData,
-  ViaCepApiResponse,
-  CacheStatus,
-} from "../types/viacep";
+import { CataBagulhoResult, CataBagulhoCacheData } from "../types/cataBagulho";
 
-export class ViaCepService {
-  private readonly CACHE_TTL_HOURS = 24; // TTL de 24 horas
-  private readonly VIACEP_BASE_URL = "https://viacep.com.br/ws";
+export class CataBagulhoService {
+  private readonly BASE_URL = "https://locatsp.saclimpeza2.com.br/mapa/resultados/";
+  private readonly CACHE_TTL_HOURS = 24;
 
   /**
-   * Normaliza o CEP removendo caracteres especiais
+   * Método principal que orquestra a busca, utilizando cache.
+   */
+  public async search(lat: number, lng: number): Promise<CataBagulhoResult[]> {
+    // 1. Tenta buscar do cache
+    const cachedResults = await this.getCachedResults(lat, lng);
+    if (cachedResults) {
+      console.log(`✅ [Cata-Bagulho] Cache HIT para coordenadas: ${lat}, ${lng}`);
+      return cachedResults;
+    }
+
+    // 2. Se não houver cache, busca na fonte original (web scraping)
+    console.log(`❌ [Cata-Bagulho] Cache MISS. Buscando na fonte externa...`);
+    const liveResults = await this.fetchFromSource(lat, lng);
+
+    // 3. Salva os novos resultados no cache
+    if (liveResults.length > 0) {
+      await this.cacheResults(lat, lng, liveResults);
+    }
+
+    return liveResults;
+  }
+
+  /**
+   * Busca resultados no cache do banco de dados que não tenham expirado.
+   */
+  private async getCachedResults(lat: number, lng: number): Promise<CataBagulhoResult[] | null> {
+    try {
+      const query = `
+        SELECT results FROM catabagulho_cache
+        WHERE latitude = $1 AND longitude = $2 AND expires_at > NOW()
+        LIMIT 1;
+      `;
+      // Arredondar para evitar problemas de precisão com float
+      const result = await db.query(query, [lat.toFixed(8), lng.toFixed(8)]);
+
+      if (result.rows.length > 0) {
+        return result.rows[0].results as CataBagulhoResult[];
+      }
+      return null;
+    } catch (error) {
+      console.error("Erro ao buscar resultados do cache Cata-Bagulho:", error);
+      return null; // Em caso de erro, continua para a busca externa
+    }
+  }
+
+  /**
+   * Salva os resultados da busca no banco de dados.
+   */
+  private async cacheResults(lat: number, lng: number, results: CataBagulhoResult[]): Promise<void> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + this.CACHE_TTL_HOURS);
+
+      const query = `
+        INSERT INTO catabagulho_cache (latitude, longitude, results, expires_at)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (latitude, longitude)
+        DO UPDATE SET
+          results = EXCLUDED.results,
+          cached_at = CURRENT_TIMESTAMP,
+          expires_at = EXCLUDED.expires_at;
+      `;
+
+      await db.query(query, [lat.toFixed(8), lng.toFixed(8), JSON.stringify(results), expiresAt]);
+      console.log(`💾 [Cata-Bagulho] Resultados para ${lat}, ${lng} salvos no cache.`);
+    } catch (error) {
+      console.error("Erro ao salvar resultados no cache Cata-Bagulho:", error);
+    }
+  }
+
+  /**
+   * Lógica de web scraping original.
+   */
+  private async fetchFromSource(lat: number, lng: number): Promise<CataBagulhoResult[]> {
+    const url = `${this.BASE_URL}?servico=grandes-objetos&lat=${lat}&lng=${lng}`;
+    console.log(`[Cata-Bagulho] Buscando dados em: ${url}`);
+
+    try {
+      const { data } = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        },
+        timeout: 15000,
+      });
+
+      return this.parseHTML(data);
+    } catch (error: any) {
+      console.error("[Cata-Bagulho] Erro no serviço de scraping:", error.message);
+      throw new Error("Não foi possível obter os dados do serviço Cata-Bagulho.");
+    }
+  }
+
+  private parseHTML(html: string): CataBagulhoResult[] {
+    const $ = cheerio.load(html);
+    const results: CataBagulhoResult[] = [];
+
+    const resultItems = $("body").find("div[style='padding:10px']");
+
+    if (resultItems.length === 0) {
+      console.log("[Cata-Bagulho] Nenhum item de resultado encontrado no HTML.");
+      return [];
+    }
+
+    resultItems.each((_, element) => {
+      const street = $(element).find("b").first().text().trim();
+      if (!street) return; // Pula se não encontrar o nome da rua
+
+      const infoText = $(element).text();
+      const extractInfo = (regex: RegExp): string => {
+        const match = infoText.match(regex);
+        return match ? match[1].trim() : "Não informado";
+      };
+
+      results.push({
+        street: street,
+        startStretch: extractInfo(/Trecho de Coleta: Início em (.*?)(?= Fim)/),
+        endStretch: extractInfo(/Fim em (.*?)\n/),
+        dates: [extractInfo(/Datas: (.*?)\n/)],
+        frequency: extractInfo(/Frequência: (.*?)\n/),
+        shift: extractInfo(/Turno: (.*?)\n/),
+        schedule: extractInfo(/Horário: (.*?)\n/),
+      });
+    });
+
+    return results;
+  }
+}
+```
+
+--- Caminho: backend/src/services/viacepService.ts ---
+```typescript
+import axios from "axios";
+import db from "../database/database";
+import { ViaCepResponse, CacheStatus } from "../types/viacep";
+
+export class ViaCepService {
+  private readonly cacheTTLHours = 24;
+
+  /**
+   * Normaliza o CEP removendo caracteres não numéricos
    */
   private normalizeCep(cep: string): string {
     return cep.replace(/\D/g, "");
   }
 
   /**
-   * Formata o CEP para o padrão 00000-000
+   * Método principal que busca CEP com cache no banco de dados
    */
-  private formatCep(cep: string): string {
+  async buscarEnderecoPorCep(cep: string): Promise<ViaCepResponse> {
+    const normalizedCep = this.normalizeCep(cep);
+    
+    if (normalizedCep.length !== 8) {
+      throw new Error("CEP deve conter exatamente 8 dígitos");
+    }
+
+    // 1. Tenta buscar do cache (banco de dados)
+    const cachedData = await this.getCachedCep(normalizedCep);
+    if (cachedData) {
+      console.log(`✅ [ViaCEP] Cache HIT para CEP: ${normalizedCep}`);
+      return cachedData;
+    }
+
+    // 2. Se não houver cache válido, busca na API externa
+    console.log(`❌ [ViaCEP] Cache MISS. Buscando na API externa...`);
+    const apiData = await this.fetchFromViaCepAPI(normalizedCep);
+
+    // 3. Salva no cache do banco de dados
+    await this.saveCachedCep(normalizedCep, apiData);
+
+    return apiData;
+  }
+
+  /**
+   * Busca CEP no cache do banco de dados
+   */
+  private async getCachedCep(cep: string): Promise<ViaCepResponse | null> {
+    try {
+      const query = `
+        SELECT 
+          cep, logradouro, complemento, unidade, 
+          bairro, localidade, uf
+        FROM viacep_cache 
+        WHERE cep = $1 AND expires_at > NOW()
+        LIMIT 1
+      `;
+
+      const result = await db.query(query, [this.formatCepWithHyphen(cep)]);
+
+      if (result.rows.length > 0) {
+        return result.rows[0] as ViaCepResponse;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Erro ao buscar CEP no cache:", error);
+      return null; // Em caso de erro, continua para API externa
+    }
+  }
+
+  /**
+   * Busca CEP na API externa do ViaCEP
+   */
+  private async fetchFromViaCepAPI(cep: string): Promise<ViaCepResponse> {
+    const url = `https://viacep.com.br/ws/${cep}/json/`;
+    console.log(`[ViaCEP] Buscando dados em: ${url}`);
+
+    try {
+      const { data } = await axios.get<ViaCepResponse>(url, {
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'LogoAli-App/1.0.0',
+        },
+      });
+
+      // Verifica se a API retornou erro (CEP não encontrado)
+      if ('erro' in data) {
+        throw new Error("CEP não encontrado");
+      }
+
+      return data;
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          throw new Error("CEP não encontrado");
+        }
+        throw new Error("Falha na conexão com o serviço de CEP");
+      }
+      throw new Error(error.message || "Erro ao buscar CEP");
+    }
+  }
+
+  /**
+   * Salva CEP no cache do banco de dados
+   */
+  private async saveCachedCep(cep: string, data: ViaCepResponse): Promise<void> {
+    try {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + this.cacheTTLHours);
+
+      const formattedCep = this.formatCepWithHyphen(cep);
+
+      const query = `
+        INSERT INTO viacep_cache (
+          cep, logradouro, complemento, unidade, 
+          bairro, localidade, uf, expires_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (cep) 
+        DO UPDATE SET
+          logradouro = EXCLUDED.logradouro,
+          complemento = EXCLUDED.complemento,
+          unidade = EXCLUDED.unidade,
+          bairro = EXCLUDED.bairro,
+          localidade = EXCLUDED.localidade,
+          uf = EXCLUDED.uf,
+          cached_at = CURRENT_TIMESTAMP,
+          expires_at = EXCLUDED.expires_at,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+
+      await db.query(query, [
+        formattedCep,
+        data.logradouro || '',
+        data.complemento || '',
+        data.unidade || '',
+        data.bairro || '',
+        data.localidade || '',
+        data.uf || '',
+        expiresAt,
+      ]);
+
+      console.log(`💾 [ViaCEP] CEP ${formattedCep} salvo no cache até ${expiresAt.toLocaleString('pt-BR')}`);
+    } catch (error) {
+      console.error("Erro ao salvar CEP no cache:", error);
+      // Não lança erro para não impedir o retorno dos dados
+    }
+  }
+
+  /**
+   * Formata CEP com hífen (12345678 -> 12345-678)
+   */
+  private formatCepWithHyphen(cep: string): string {
     const normalized = this.normalizeCep(cep);
     if (normalized.length === 8) {
       return `${normalized.substring(0, 5)}-${normalized.substring(5)}`;
@@ -778,242 +1011,100 @@ export class ViaCepService {
   }
 
   /**
-   * Valida se o CEP tem formato válido
+   * Obtém estatísticas do cache
    */
-  private isValidCep(cep: string): boolean {
-    const normalized = this.normalizeCep(cep);
-    return /^\d{8}$/.test(normalized);
-  }
-
-  /**
-   * Busca CEP no cache do banco de dados
-   */
-  private async getCachedCep(cep: string): Promise<ViaCepCacheData | null> {
+  async getCacheStats() {
     try {
-      const formattedCep = this.formatCep(cep);
+      const totalQuery = "SELECT COUNT(*) as total FROM viacep_cache";
+      const validQuery = "SELECT COUNT(*) as valid FROM viacep_cache WHERE expires_at > NOW()";
+      const expiredQuery = "SELECT COUNT(*) as expired FROM viacep_cache WHERE expires_at <= NOW()";
 
-      const query = `
-        SELECT * FROM viacep_cache 
-        WHERE cep = $1 AND expires_at > NOW()
-        ORDER BY cached_at DESC 
-        LIMIT 1
-      `;
-
-      const result = await db.query(query, [formattedCep]);
-
-      if (result.rows.length > 0) {
-        console.log(`✅ Cache HIT para CEP: ${formattedCep}`);
-        return result.rows[0] as ViaCepCacheData;
-      }
-
-      console.log(`❌ Cache MISS para CEP: ${formattedCep}`);
-      return null;
-    } catch (error) {
-      console.error("Erro ao buscar CEP no cache:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Salva CEP no cache
-   */
-  private async cacheCep(cepData: ViaCepResponse): Promise<void> {
-    try {
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + this.CACHE_TTL_HOURS);
-
-      const query = `
-        INSERT INTO viacep_cache (cep, logradouro, complemento, unidade, bairro, localidade, uf, expires_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ON CONFLICT (cep) 
-        DO UPDATE SET 
-          logradouro = EXCLUDED.logradouro,
-          complemento = EXCLUDED.complemento,
-          unidade = EXCLUDED.unidade,
-          bairro = EXCLUDED.bairro,
-          localidade = EXCLUDED.localidade,
-          uf = EXCLUDED.uf,
-          expires_at = EXCLUDED.expires_at,
-          cached_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-      `;
-
-      await db.query(query, [
-        cepData.cep,
-        cepData.logradouro,
-        cepData.complemento,
-        cepData.unidade,
-        cepData.bairro,
-        cepData.localidade,
-        cepData.uf,
-        expiresAt.toISOString(),
+      const [totalResult, validResult, expiredResult] = await Promise.all([
+        db.query(totalQuery),
+        db.query(validQuery),
+        db.query(expiredQuery),
       ]);
-
-      console.log(
-        `💾 CEP ${cepData.cep} salvo no cache até ${expiresAt.toISOString()}`
-      );
-    } catch (error) {
-      console.error("Erro ao salvar CEP no cache:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Busca CEP na API do ViaCEP
-   */
-  private async fetchFromViaCepApi(cep: string): Promise<ViaCepResponse> {
-    try {
-      const normalizedCep = this.normalizeCep(cep);
-      const url = `${this.VIACEP_BASE_URL}/${normalizedCep}/json/`;
-
-      console.log(`🌐 Buscando CEP ${normalizedCep} na API ViaCEP...`);
-
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.erro) {
-        throw new Error(`CEP ${normalizedCep} não encontrado`);
-      }
-
-      // Retorna apenas os campos que queremos usar
-      const result: ViaCepResponse = {
-        cep: this.formatCep(data.cep),
-        logradouro: data.logradouro || "",
-        complemento: data.complemento || "",
-        unidade: data.unidade || "",
-        bairro: data.bairro || "",
-        localidade: data.localidade || "",
-        uf: data.uf || "",
-      };
-
-      console.log(`✅ CEP ${result.cep} encontrado na API`);
-      return result;
-    } catch (error) {
-      console.error(`Erro ao buscar CEP na API:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Método principal para buscar CEP (com cache)
-   */
-  public async getCep(cep: string): Promise<ViaCepApiResponse> {
-    // Validação do CEP
-    if (!this.isValidCep(cep)) {
-      throw new Error("CEP inválido. Use o formato 00000000 ou 00000-000");
-    }
-
-    let cacheStatus: CacheStatus = {
-      hit: false,
-      expired: false,
-      source: "api",
-    };
-
-    try {
-      // 1. Tentar buscar no cache primeiro
-      const cachedData = await this.getCachedCep(cep);
-
-      if (cachedData) {
-        cacheStatus = {
-          hit: true,
-          expired: false,
-          source: "cache",
-        };
-
-        return {
-          cep: cachedData.cep,
-          logradouro: cachedData.logradouro || "",
-          complemento: cachedData.complemento || "",
-          unidade: cachedData.unidade || "",
-          bairro: cachedData.bairro || "",
-          localidade: cachedData.localidade || "",
-          uf: cachedData.uf || "",
-          cacheStatus,
-        };
-      }
-
-      // 2. Se não estiver no cache, buscar na API
-      const apiData = await this.fetchFromViaCepApi(cep);
-
-      // 3. Salvar no cache
-      await this.cacheCep(apiData);
-
-      cacheStatus = {
-        hit: false,
-        expired: false,
-        source: "api",
-      };
-
-      return {
-        ...apiData,
-        cacheStatus,
-      };
-    } catch (error) {
-      console.error("Erro no serviço ViaCEP:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Limpa cache expirado (método utilitário)
-   */
-  public async clearExpiredCache(): Promise<number> {
-    try {
-      const query = "DELETE FROM viacep_cache WHERE expires_at <= NOW()";
-      const result = await db.query(query, []);
-
-      console.log(
-        `🧹 Removidos ${result.rowCount || 0} registros expirados do cache`
-      );
-      return result.rowCount || 0;
-    } catch (error) {
-      console.error("Erro ao limpar cache expirado:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Estatísticas do cache
-   */
-  public async getCacheStats(): Promise<any> {
-    try {
-      const queries = [
-        { sql: "SELECT COUNT(*) as total FROM viacep_cache", params: [] },
-        {
-          sql: "SELECT COUNT(*) as valid FROM viacep_cache WHERE expires_at > NOW()",
-          params: [],
-        },
-        {
-          sql: "SELECT COUNT(*) as expired FROM viacep_cache WHERE expires_at <= NOW()",
-          params: [],
-        },
-      ];
-
-      const [totalResult, validResult, expiredResult] = await Promise.all(
-        queries.map(({ sql, params }) => db.query(sql, params))
-      );
 
       return {
         total: parseInt(totalResult.rows[0].total),
         valid: parseInt(validResult.rows[0].valid),
         expired: parseInt(expiredResult.rows[0].expired),
+        ttlHours: this.cacheTTLHours,
       };
     } catch (error) {
       console.error("Erro ao obter estatísticas do cache:", error);
-      throw error;
+      return {
+        total: 0,
+        valid: 0,
+        expired: 0,
+        ttlHours: this.cacheTTLHours,
+        error: "Falha ao obter estatísticas",
+      };
     }
   }
-}
 
+  /**
+   * Remove entradas expiradas do cache
+   */
+  async clearExpiredCache() {
+    try {
+      const query = "DELETE FROM viacep_cache WHERE expires_at <= NOW()";
+      const result = await db.query(query);
+      
+      return {
+        removidos: result.rowCount || 0,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error("Erro ao limpar cache expirado:", error);
+      return {
+        removidos: 0,
+        error: "Falha ao limpar cache expirado",
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  /**
+   * Método para testes - insere dados fake no cache
+   */
+  seedCache(cep: string, data: ViaCepResponse) {
+    // Para manter compatibilidade com o controller existente
+    // mas agora usa o banco de dados
+    const normalized = this.normalizeCep(cep);
+    return this.saveCachedCep(normalized, data).then(() => ({
+      ok: true,
+      cep: this.formatCepWithHyphen(normalized),
+      message: "Dados inseridos no cache do banco de dados"
+    }));
+  }
+}
 ```
 
 
 --- Caminho: backend/src/types ---
+--- Caminho: backend/src/types/cataBagulho.ts ---
+```typescript
+export interface CataBagulhoResult {
+  street: string;
+  startStretch?: string;
+  endStretch?: string;
+  dates: string[];
+  frequency: string;
+  shift: string;
+  schedule: string;
+}
+
+export interface CataBagulhoCacheData {
+  id: number;
+  latitude: number;
+  longitude: number;
+  results: CataBagulhoResult[];
+  cached_at: Date;
+  expires_at: Date;
+}
+```
+
 --- Caminho: backend/src/types/viacep.ts ---
 ```typescript
 export interface ViaCepResponse {
@@ -1096,15 +1187,33 @@ CMD ["npm", "run", "dev"]
 
 --- Caminho: frontend/next.config.ts ---
 ```typescript
-// frontend/next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: "standalone",
-  // ... outras configurações
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://logo-ali-back:3333/api/:path*',
+      },
+    ];
+  },
+  experimental: {
+    turbo: {
+      resolveExtensions: [
+        '.mdx',
+        '.tsx',
+        '.ts',
+        '.jsx',
+        '.js',
+        '.mjs',
+        '.json',
+      ],
+    },
+  },
 };
 
-module.exports = nextConfig;
-
+export default nextConfig;
 ```
 
 --- Caminho: frontend/package.json ---
@@ -1124,18 +1233,23 @@ module.exports = nextConfig;
   "dependencies": {
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.4.5"
+    "next": "15.4.5",
+    "axios": "^1.11.0",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0",
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "@types/leaflet": "^1.9.20",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4",
     "eslint": "^9",
     "eslint-config-next": "15.4.5",
-    "@eslint/eslintrc": "^3"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
 
@@ -1166,6 +1280,12 @@ module.exports = nextConfig;
 --- Caminho: frontend/src/app/layout.tsx ---
 
 --- Caminho: frontend/src/app/page.tsx ---
+
+--- Caminho: frontend/src/app/servicos ---
+--- Caminho: frontend/src/app/servicos/loading.tsx ---
+
+--- Caminho: frontend/src/app/servicos/page.tsx ---
+
 
 
 --- Caminho: frontend/src/components ---
@@ -1295,173 +1415,100 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
 
 ```
 
---- Caminho: frontend/src/hooks/useSearch.ts ---
-```typescript
-import { useState } from "react";
-import type { ServiceSearchParams, Service } from "../types/services";
-import * as api from "../services/api";
-
-export function useSearch() {
-  const [loading, setLoading] = useState(false);
-  const [services, setServices] = useState<Service[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  async function search(params: ServiceSearchParams) {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await api.searchServices(params);
-      setServices(result.services ?? []);
-      return result;
-    } catch (err: any) {
-      setError(err?.message ?? "Erro na busca");
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return {
-    loading,
-    services,
-    error,
-    search,
-    setServices,
-  };
-}
-
-```
-
 
 --- Caminho: frontend/src/services ---
 --- Caminho: frontend/src/services/api.ts ---
 ```typescript
 import axios from "axios";
 import { API_ENDPOINTS } from "../utils/constants";
-import type { ServiceSearchParams } from "../types/services";
-
-const BACKEND = API_ENDPOINTS.BACKEND_BASE;
+import { CataBagulhoResult } from "../types/cataBagulho";
 
 const instance = axios.create({
-  baseURL: BACKEND,
+  baseURL: API_ENDPOINTS.BACKEND_BASE,
   timeout: 15000,
 });
 
-export async function searchServices(params: ServiceSearchParams) {
-  // Esperamos que o backend tenha um endpoint /services/search que aceite query params
-  // Caso não exista, este método pode ser adaptado para chamar endpoints individuais (viacep, nominatim, etc.)
+export async function searchCataBagulho(lat: number, lng: number): Promise<CataBagulhoResult[]> {
   try {
-    const resp = await instance.get("/services/search", { params });
-    return resp.data;
+    const { data } = await instance.get('/cata-bagulho', {
+      params: { lat, lng }
+    });
+    // A resposta do backend já vem com um objeto { data: [...] }, vamos retornar o array interno.
+    return data.data || [];
   } catch (error) {
-    // fallback: se backend não existir, retornar mock ou lançar
-    throw error;
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error || "Erro ao buscar o serviço Cata-Bagulho.");
+    }
+    throw new Error("Erro de conexão com o servidor para buscar o serviço.");
   }
 }
-
-export async function getServiceDetails(id: number) {
-  try {
-    const resp = await instance.get(`/services/${id}`);
-    return resp.data;
-  } catch (error) {
-    throw error;
-  }
-}
-
 ```
 
 --- Caminho: frontend/src/services/nominatim.ts ---
 ```typescript
 import axios from "axios";
 import { API_ENDPOINTS } from "../utils/constants";
+import { NominatimResult } from "../types/api";
 
-export async function geocodeAddress(query: string) {
-  // Usa Nominatim diretamente
+export async function geocodeAddress(query: string): Promise<NominatimResult[]> {
   const url = API_ENDPOINTS.NOMINATIM;
   try {
-    const resp = await axios.get(url, {
+    const { data } = await axios.get(url, {
       params: {
         q: query,
         format: "json",
-        addressdetails: 1,
-        limit: 5,
+        limit: 1, // Queremos apenas o resultado mais provável
       },
-      headers: {
-        "Accept-Language": "pt-BR",
-        "User-Agent": "logo-ali-app/1.0 (contato: )",
-      },
+      headers: { 'Accept-Language': 'pt-BR' },
     });
-
-    return resp.data; // array de resultados
+    return data;
   } catch (error) {
-    throw error;
+    console.error("Erro na geocodificação:", error);
+    throw new Error("Não foi possível converter o endereço em coordenadas.");
   }
 }
-
-```
-
---- Caminho: frontend/src/services/prefecture.ts ---
-```typescript
-import axios from "axios";
-import { API_ENDPOINTS } from "../utils/constants";
-
-/**
- * Funções próximas à prefeitura / APILIB
- * Observação: aqui fazemos chamadas para um endpoint backend hipotético /prefecture/*
- * Caso seu backend implemente rotas específicas, adapte os paths abaixo.
- */
-
-const BACKEND = API_ENDPOINTS.BACKEND_BASE;
-const client = axios.create({ baseURL: BACKEND, timeout: 15000 });
-
-export async function fetchServicesFromPrefecture(
-  lat: number,
-  lng: number,
-  serviceType?: string
-) {
-  try {
-    const resp = await client.get("/prefecture/services", {
-      params: { lat, lng, serviceType },
-    });
-    return resp.data;
-  } catch (error) {
-    // se backend não tiver, repassar erro para tratamento
-    throw error;
-  }
-}
-
 ```
 
 --- Caminho: frontend/src/services/viacep.ts ---
 ```typescript
 import axios from "axios";
 import { API_ENDPOINTS } from "../utils/constants";
+import { ViaCepResponse } from "../types/location";
 
-const VIACEP = API_ENDPOINTS.VIACEP;
+const BACKEND_API_URL = API_ENDPOINTS.BACKEND_BASE;
 
 /**
- * Tenta buscar pelo backend primeiro (caso tenha cache),
- * senão busca direto no ViaCEP.
+ * Busca as informações de um CEP através do nosso backend.
+ * O backend gerencia o cache e a chamada para a API externa do ViaCEP.
+ * @param cep O CEP a ser buscado (apenas dígitos).
+ * @returns Os dados do endereço.
  */
-export async function fetchCep(cep: string) {
-  // normaliza
-  const normalized = cep.replace(/\D/g, "");
+export async function fetchCep(cep: string): Promise<ViaCepResponse> {
+  const normalizedCep = cep.replace(/\D/g, "");
+
+  if (normalizedCep.length !== 8) {
+    throw new Error("CEP inválido. Forneça 8 dígitos numéricos.");
+  }
+
   try {
-    // tenta backend cache
-    const backendUrl =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:3333/api"
-        : "/api";
-    const respBackend = await axios.get(`${backendUrl}/cep/${normalized}`);
-    return respBackend.data;
-  } catch {
-    // fallback direto para ViaCEP
-    const resp = await axios.get(`${VIACEP}/${normalized}/json/`);
-    if (resp.data.erro) throw new Error("CEP não encontrado");
-    return resp.data;
+    // A requisição é feita para a rota do nosso próprio backend
+    const response = await axios.get(`${BACKEND_API_URL}/cep/${normalizedCep}`);
+    
+    // A resposta do backend já vem com a estrutura { success, data, meta }
+    if (response.data && response.data.success) {
+      return response.data.data;
+    } else {
+      throw new Error(response.data.message || "Ocorreu um erro no servidor.");
+    }
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response) {
+      // Repassa a mensagem de erro específica do backend para o frontend
+      throw new Error(error.response.data.message || "Não foi possível buscar o CEP.");
+    }
+    // Erro genérico de conexão
+    throw new Error("Falha de conexão com o servidor.");
   }
 }
-
 ```
 
 
@@ -1492,6 +1539,19 @@ export interface BackendServiceSearchResponse {
 
 ```
 
+--- Caminho: frontend/src/types/cataBagulho.ts ---
+```typescript
+export interface CataBagulhoResult {
+  street: string;
+  startStretch?: string;
+  endStretch?: string;
+  dates: string[];
+  frequency: string;
+  shift: string;
+  schedule: string;
+}
+```
+
 --- Caminho: frontend/src/types/location.ts ---
 ```typescript
 export interface Coordinates {
@@ -1517,13 +1577,16 @@ export interface ViaCepResponse {
   bairro: string;
   localidade: string;
   uf: string;
+  // Adicionados para guardar as coordenadas após geocodificação
+  lat?: number;
+  lon?: number;
 }
-
 ```
 
 --- Caminho: frontend/src/types/services.ts ---
 ```typescript
 export interface Service {
+  cepData: unknown;
   id: number;
   type: string;
   name: string;
@@ -1533,14 +1596,13 @@ export interface Service {
   distance: string;
   description: string;
   coordinates: [number, number];
-  additionalInfo?: Record<string, any>;
+  additionalInfo?: Record<string, unknown>;
 }
 
 export interface ServiceSearchParams {
-  street?: string;
-  streetNumber?: string;
-  cep?: string;
-  serviceType?: string;
+  cep: string;
+  number: string;
+  serviceType: string;
 }
 
 export interface CacheStatus {
@@ -1548,7 +1610,6 @@ export interface CacheStatus {
   expired: boolean;
   source: "cache" | "api";
 }
-
 ```
 
 
@@ -1595,13 +1656,16 @@ export const SERVICE_ICONS = {
   "poda-arvores": "🌳",
 };
 
+// frontend/src/utils/constants.ts
+
+const isServer = typeof window === "undefined";
+
 export const API_ENDPOINTS = {
   VIACEP: "https://viacep.com.br/ws",
   NOMINATIM: "https://nominatim.openstreetmap.org/search",
-  BACKEND_BASE:
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3333/api"
-      : "/api",
+  BACKEND_BASE: isServer
+    ? "http://logo-ali-back:3333/api" // URL para comunicação entre containers
+    : "/api", // URL relativa para o navegador (proxy reverso)
 };
 
 ```

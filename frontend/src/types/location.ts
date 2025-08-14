@@ -21,4 +21,7 @@ export interface ViaCepResponse {
   bairro: string;
   localidade: string;
   uf: string;
+  // Adicionados para guardar as coordenadas após geocodificação
+  lat?: number;
+  lon?: number;
 }

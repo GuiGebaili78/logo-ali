@@ -4,12 +4,12 @@
   "description": "API Backend para LogoAli - Serviços Públicos SP",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc",
     "start": "node ./dist/index.js",
     "dev": "ts-node src/index.ts",
     "dev:watch": "nodemon --exec ts-node src/index.ts",
-    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up"
+    "migrate:up": "npx ts-node src/database/migrations/migrate.ts up",
+    "docker:reset": "docker-compose -f ../infra/docker-compose.yml down -v && docker system prune -a --volumes -f && docker-compose -f ../infra/docker-compose.yml build --no-cache && docker-compose -f ../infra/docker-compose.yml up -d && npm run migrate:up && npm run dev"
   },
   "keywords": [
     "viacep",
@@ -22,6 +22,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0-rc.12",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "pg": "^8.16.3"

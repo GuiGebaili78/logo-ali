@@ -1,8 +1,27 @@
-// frontend/next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  //output: "standalone",
-  // ... outras configurações
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://logo-ali-back:3333/api/:path*',
+      },
+    ];
+  },
+  experimental: {
+    turbo: {
+      resolveExtensions: [
+        '.mdx',
+        '.tsx',
+        '.ts',
+        '.jsx',
+        '.js',
+        '.mjs',
+        '.json',
+      ],
+    },
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

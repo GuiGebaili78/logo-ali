@@ -1,53 +1,20 @@
-import React from "react";
-import type { Service } from "../../types/services";
+import { CataBagulhoResult } from "@/types/cataBagulho";
 
-interface Props {
-  service: Service;
-  onOpenDetails?: (service: Service) => void;
-  onViewOnMap?: (service: Service) => void;
+interface ServiceCardProps {
+  service: CataBagulhoResult;
 }
 
-export default function ServiceCard({
-  service,
-  onOpenDetails,
-  onViewOnMap,
-}: Props) {
+export default function ServiceCard({ service }: ServiceCardProps) {
   return (
-    <div className="border rounded-lg p-4 shadow-sm bg-white flex flex-col gap-2">
-      <div className="flex items-start justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">{service.name}</h3>
-          <div className="text-sm text-gray-600">{service.type}</div>
-        </div>
-        <div className="text-right text-sm">
-          <div className="font-medium">{service.distance ?? "—"}</div>
-          <div className="text-xs text-gray-500">
-            {service.date} {service.time}
-          </div>
-        </div>
-      </div>
-
-      <div className="text-sm text-gray-700">{service.address}</div>
-
-      {service.description && (
-        <div className="text-sm text-gray-600">{service.description}</div>
-      )}
-
-      <div className="flex gap-2 mt-3">
-        <button
-          onClick={() => onOpenDetails && onOpenDetails(service)}
-          className="flex-1 bg-accent-color hover:opacity-90 text-white py-2 rounded-md text-sm"
-          style={{ backgroundColor: "var(--accent-color)" }}
-        >
-          Saiba Mais
-        </button>
-
-        <button
-          onClick={() => onViewOnMap && onViewOnMap(service)}
-          className="px-4 py-2 border rounded-md text-sm"
-        >
-          Ver no Mapa
-        </button>
+    <div className="bg-[var(--secondary-color)] p-4 rounded-lg shadow-md transition-transform hover:scale-105">
+      <h3 className="text-lg font-bold text-[var(--accent-color)] mb-2">{service.street}</h3>
+      <div className="text-sm space-y-1">
+          <p><strong>Trecho Início:</strong> {service.startStretch}</p>
+          <p><strong>Trecho Fim:</strong> {service.endStretch}</p>
+          <p><strong>Datas:</strong> {service.dates.join(', ')}</p>
+          <p><strong>Frequência:</strong> {service.frequency}</p>
+          <p><strong>Turno:</strong> {service.shift}</p>
+          <p><strong>Horário:</strong> {service.schedule}</p>
       </div>
     </div>
   );

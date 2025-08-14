@@ -1,152 +1,140 @@
-"use client";
-
-import React, { useState } from "react";
-import { Service } from "../../types/services";
-import { SERVICE_ICONS } from "../../utils/constants";
-import {
-  formatDateISO,
-  formatTimeISO,
-  formatDistanceMetersToKm,
-} from "../../utils/formatters";
-import Button from "../ui/Button";
-import ServiceDetailsModal from "../services/ServiceDatailsModal";
-import Loading from "../ui/Loading";
+import React from "react";
+import type { CataBagulhoResult } from "../../types/cataBagulho";
 
 interface ServicesListProps {
-  services: Service[];
-  loading?: boolean;
-  onServiceSelect?: (serviceId: number) => void;
+  services: CataBagulhoResult[];
 }
 
-export default function ServicesList({
-  services,
-  loading,
-  onServiceSelect,
-}: ServicesListProps) {
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleServiceDetails = (service: Service) => {
-    setSelectedService(service);
-    setIsModalOpen(true);
-  };
-
-  const handleViewOnMap = (service: Service) => {
-    onServiceSelect?.(service.id);
-  };
-
-  if (loading) {
+export default function ServicesList({ services }: ServicesListProps) {
+  if (services.length === 0) {
     return (
-      <div className="p-6">
-        <h2 className="text-xl font-semibold text-[var(--primary-color)] mb-4">
-          Serviços Disponíveis
-        </h2>
-        <Loading />
+      <div className="text-center py-8">
+        <div className="text-4xl mb-4">🔍</div>
+        <p className="text-gray-500">Nenhum serviço encontrado</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold text-[var(--primary-color)] mb-4">
-        Serviços Disponíveis
-        {services.length > 0 && (
-          <span className="ml-2 text-sm font-normal text-gray-500">
-            ({services.length} encontrados)
-          </span>
-        )}
-      </h2>
+    <div className="space-y-4">
+      {services.map((service, index) => (
+        <div
+          key={index}
+          className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow duration-200 bg-white"
+        >
+          {/* Cabeçalho do Card */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                📍 {service.street}
+              </h3>
+              {(service.startStretch || service.endStretch) && (
+                <p className="text-sm text-gray-600 mb-2">
+                  <strong>Trecho:</strong>{" "}
+                  {service.startStretch && `Início: ${service.startStretch}`}
+                  {service.startStretch && service.endStretch && " • "}
+                  {service.endStretch && `Fim: ${service.endStretch}`}
+                </p>
+              )}
+            </div>
+            <div className="ml-4">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                🚛 Cata-Bagulho
+              </span>
+            </div>
+          </div>
 
-      {services.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-4">🔍</div>
-          <p className="text-gray-500 mb-2">Nenhum serviço encontrado</p>
-          <p className="text-sm text-gray-400">
-            Tente buscar por um endereço ou CEP para ver os serviços disponíveis
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4 max-h-96 overflow-y-auto">
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-xl">
-                      {SERVICE_ICONS[
-                        service.type as keyof typeof SERVICE_ICONS
-                      ] || "📋"}
-                    </span>
-                    <h3 className="font-semibold text-[var(--primary-color)]">
-                      {service.name}
-                    </h3>
-                  </div>
-
-                  <div className="space-y-1 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <span>📍</span>
-                      <span>{service.address}</span>
-                    </div>
-
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <span>📅</span>
-                        <span>{formatDateISO(service.date)}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span>⏰</span>
-                        <span>{formatTimeISO(service.time)}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span>📏</span>
-                        <span>
-                          {formatDistanceMetersToKm(service.distance)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {service.description && (
-                      <p className="text-gray-500 text-xs mt-2">
-                        {service.description}
-                      </p>
-                    )}
-                  </div>
-                </div>
+          {/* Informações do Serviço */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Datas */}
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-green-600 text-sm">📅</span>
               </div>
-
-              <div className="flex space-x-2 mt-4">
-                <Button
-                  variant="secondary"
-                  onClick={() => handleServiceDetails(service)}
-                >
-                  Saiba Mais
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => handleViewOnMap(service)}
-                >
-                  Ver no Mapa
-                </Button>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Datas
+                </p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {service.dates && service.dates.length > 0 
+                    ? service.dates.join(", ") 
+                    : "Não informado"}
+                </p>
               </div>
             </div>
-          ))}
-        </div>
-      )}
 
-      {/* Modal de detalhes */}
-      {selectedService && (
-        <ServiceDetailsModal
-          service={selectedService}
-          open={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedService(null);
-          }}
-        />
-      )}
+            {/* Frequência */}
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-purple-600 text-sm">🔄</span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Frequência
+                </p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {service.frequency || "Não informado"}
+                </p>
+              </div>
+            </div>
+
+            {/* Turno */}
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-orange-600 text-sm">🌅</span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Turno
+                </p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {service.shift || "Não informado"}
+                </p>
+              </div>
+            </div>
+
+            {/* Horário */}
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <span className="text-blue-600 text-sm">⏰</span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Horário
+                </p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {service.schedule || "Não informado"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Linha de separação e informação adicional */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                ✨ Deixe objetos grandes na calçada no horário indicado
+              </p>
+              <button className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">
+                Ver no mapa →
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* Informações importantes */}
+      <div className="mt-8 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <h4 className="font-semibold text-yellow-800 mb-2">
+          ⚠️ Instruções importantes:
+        </h4>
+        <ul className="text-sm text-yellow-700 space-y-1">
+          <li>• Deixe os objetos na calçada, próximo ao meio-fio</li>
+          <li>• Não deixe objetos em esquinas ou em frente a garagens</li>
+          <li>• Objetos eletrônicos podem ser coletados separadamente</li>
+          <li>• Respeite os horários e datas indicados</li>
+        </ul>
+      </div>
     </div>
   );
 }

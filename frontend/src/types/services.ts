@@ -13,10 +13,9 @@ export interface Service {
 }
 
 export interface ServiceSearchParams {
-  street?: string;
-  streetNumber?: string;
-  cep?: string;
-  serviceType?: string;
+  cep: string;
+  number: string;
+  serviceType: string;
 }
 
 export interface CacheStatus {

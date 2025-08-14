@@ -1,198 +1,240 @@
-"use client";
+import React, { useState, useEffect } from "react";
+import { fetchCep } from "../../services/viacep";
+import { geocodeAddress } from "../../services/nominatim";
+import { SERVICE_TYPES } from "../../utils/constants";
+import { formatCep } from "../../utils/formatters";
+import type { ViaCepResponse } from "../../types/location";
 
-import { useState, useRef, useEffect } from "react";
-import { useAppContext } from "@/context/AppContext";
-import { validateCep, formatCep } from "@/utils/validators";
-import { SAMPLE_STREETS } from "@/utils/constants";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
-import ServiceSelector from "./ServiceSelector";
+interface SearchBarProps {
+  onSearch: (data: {
+    cep: string;
+    address: ViaCepResponse;
+    coordinates: { lat: number; lng: number };
+    serviceType: string;
+  }) => void;
+}
 
-export default function SearchBar() {
-  const { performSearch, isLoading } = useAppContext();
-  const [street, setStreet] = useState("");
-  const [streetNumber, setStreetNumber] = useState("");
-  const [cep, setCep] = useState("");
-  const [selectedService, setSelectedService] = useState("");
-  const [showAutocomplete, setShowAutocomplete] = useState(false);
-  const [showStreetNumber, setShowStreetNumber] = useState(false);
-  const [validationMessage, setValidationMessage] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error">("error");
+export default function SearchBar({ onSearch }: SearchBarProps) {
+  const [cepValue, setCepValue] = useState("");
+  const [numberValue, setNumberValue] = useState("");
+  const [serviceType, setServiceType] = useState("cata-bagulho");
+  const [addressData, setAddressData] = useState<ViaCepResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [step, setStep] = useState<"cep" | "address" | "service">("cep");
 
-  const autocompleteRef = useRef<HTMLDivElement>(null);
-
-  // Close autocomplete when clicking outside
+  // Auto-busca CEP quando completar 8 dígitos
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        autocompleteRef.current &&
-        !autocompleteRef.current.contains(event.target as Node)
-      ) {
-        setShowAutocomplete(false);
+    if (cepValue.replace(/\D/g, "").length === 8) {
+      handleCepLookup();
+    }
+  }, [cepValue]);
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCep(e.target.value);
+    setCepValue(formatted);
+    setError("");
+    
+    if (formatted.length < 9) {
+      setStep("cep");
+      setAddressData(null);
+    }
+  };
+
+  const handleCepLookup = async () => {
+    const cleanCep = cepValue.replace(/\D/g, "");
+    if (cleanCep.length !== 8) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await fetchCep(cleanCep);
+      setAddressData(data);
+      setStep("address");
+      
+      // Foca no campo de número automaticamente
+      setTimeout(() => {
+        const numberInput = document.getElementById("number-input");
+        if (numberInput) numberInput.focus();
+      }, 100);
+    } catch (err: any) {
+      setError(err.message || "Erro ao buscar CEP");
+      setStep("cep");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!addressData || !numberValue.trim()) {
+      setError("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Monta o endereço completo para geocodificação
+      const fullAddress = `${addressData.logradouro}, ${numberValue}, ${addressData.localidade}, ${addressData.uf}, Brasil`;
+      
+      const geocodeResults = await geocodeAddress(fullAddress);
+      
+      if (geocodeResults.length === 0) {
+        throw new Error("Não foi possível encontrar as coordenadas deste endereço");
       }
-    }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+      const coordinates = {
+        lat: parseFloat(geocodeResults[0].lat),
+        lng: parseFloat(geocodeResults[0].lon),
+      };
 
-  const handleStreetChange = (value: string) => {
-    setStreet(value);
-    setCep(""); // Clear CEP when street is used
-    setValidationMessage("");
+      // Chama o callback com todos os dados necessários
+      onSearch({
+        cep: cepValue,
+        address: addressData,
+        coordinates,
+        serviceType,
+      });
 
-    if (value.length >= 2) {
-      setShowAutocomplete(true);
-    } else {
-      setShowAutocomplete(false);
-      setShowStreetNumber(false);
-    }
-  };
-
-  const handleCepChange = (value: string) => {
-    const formatted = formatCep(value);
-    setCep(formatted);
-    setStreet(""); // Clear street when CEP is used
-    setShowStreetNumber(false);
-    setShowAutocomplete(false);
-    setValidationMessage("");
-
-    if (formatted.length === 9) {
-      if (validateCep(formatted)) {
-        setValidationMessage("✓ CEP válido");
-        setMessageType("success");
-      } else {
-        setValidationMessage("✗ CEP inválido");
-        setMessageType("error");
-      }
+    } catch (err: any) {
+      setError(err.message || "Erro ao processar endereço");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const selectStreet = (selectedStreet: string) => {
-    setStreet(selectedStreet);
-    setShowAutocomplete(false);
-    setShowStreetNumber(true);
-  };
-
-  const filteredStreets = SAMPLE_STREETS.filter((s) =>
-    s.toLowerCase().includes(street.toLowerCase())
-  );
-
-  const handleSearch = () => {
-    setValidationMessage("");
-
-    // Validation
-    if (!street && !cep) {
-      setValidationMessage("Por favor, informe um endereço (rua ou CEP)");
-      setMessageType("error");
-      return;
+  const handleKeyPress = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === "Enter") {
+      action();
     }
-
-    if (street && !streetNumber) {
-      setValidationMessage("Por favor, informe o número do endereço");
-      setMessageType("error");
-      return;
-    }
-
-    if (cep && !validateCep(cep)) {
-      setValidationMessage("Por favor, informe um CEP válido");
-      setMessageType("error");
-      return;
-    }
-
-    // Perform search
-    performSearch({
-      street,
-      streetNumber,
-      cep,
-      serviceType: selectedService,
-    });
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Street Search */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-primary">
-            Nome da Rua
-          </label>
-          <div className="relative" ref={autocompleteRef}>
-            <Input
-              type="text"
-              placeholder="Ex: Rua Augusta"
-              value={street}
-              onChange={(e) => handleStreetChange(e.target.value)}
-            />
+    <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto transform transition-all duration-300 hover:shadow-2xl">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          Encontre Serviços Públicos
+        </h2>
+        <p className="text-gray-600">
+          Digite seu CEP para localizar serviços próximos a você
+        </p>
+      </div>
 
-            {/* Autocomplete */}
-            {showAutocomplete && filteredStreets.length > 0 && (
-              <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg mt-1 autocomplete-list z-10">
-                {filteredStreets.map((streetName, index) => (
-                  <div
-                    key={index}
-                    className="autocomplete-item px-4 py-2 cursor-pointer hover:bg-accent hover:text-white transition-colors"
-                    onClick={() => selectStreet(streetName)}
-                  >
-                    {streetName}
-                  </div>
-                ))}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 text-sm font-medium">{error}</p>
+        </div>
+      )}
+
+      <div className="space-y-6">
+        {/* Campo CEP */}
+        <div className="relative">
+          <label htmlFor="cep-input" className="block text-sm font-semibold text-gray-700 mb-2">
+            CEP *
+          </label>
+          <div className="relative">
+            <input
+              id="cep-input"
+              type="text"
+              value={cepValue}
+              onChange={handleCepChange}
+              onKeyPress={(e) => handleKeyPress(e, handleCepLookup)}
+              placeholder="00000-000"
+              maxLength={9}
+              className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+              disabled={loading}
+            />
+            {loading && step === "cep" && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
               </div>
             )}
           </div>
-
-          {/* Street Number */}
-          {showStreetNumber && (
-            <Input
-              type="text"
-              placeholder="Número"
-              value={streetNumber}
-              onChange={(e) => setStreetNumber(e.target.value)}
-              className="mt-2"
-            />
-          )}
         </div>
 
-        {/* CEP Search */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-primary">CEP</label>
-          <Input
-            type="text"
-            placeholder="00000-000"
-            value={cep}
-            onChange={(e) => handleCepChange(e.target.value)}
-            maxLength={9}
-          />
-        </div>
-
-        {/* Service Selector */}
-        <ServiceSelector
-          value={selectedService}
-          onChange={setSelectedService}
-        />
-
-        {/* Search Button */}
-        <div className="flex items-end">
-          <Button onClick={handleSearch} loading={isLoading} className="w-full">
-            Buscar Serviços
-          </Button>
-        </div>
-      </div>
-
-      {/* Validation Messages */}
-      {validationMessage && (
-        <div className="mt-4">
-          <div
-            className={`border rounded-lg p-4 ${
-              messageType === "error"
-                ? "bg-red-50 border-red-200 text-red-700"
-                : "bg-green-50 border-green-200 text-green-700"
-            }`}
-          >
-            <p className="text-sm font-medium">{validationMessage}</p>
+        {/* Informações do Endereço */}
+        {addressData && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Logradouro</label>
+              <p className="text-sm font-semibold text-gray-900">{addressData.logradouro}</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Bairro</label>
+              <p className="text-sm font-semibold text-gray-900">{addressData.bairro}</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Cidade</label>
+              <p className="text-sm font-semibold text-gray-900">{addressData.localidade}</p>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+              <p className="text-sm font-semibold text-gray-900">{addressData.uf}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Campo Número */}
+        {step !== "cep" && (
+          <div>
+            <label htmlFor="number-input" className="block text-sm font-semibold text-gray-700 mb-2">
+              Número *
+            </label>
+            <input
+              id="number-input"
+              type="text"
+              value={numberValue}
+              onChange={(e) => setNumberValue(e.target.value)}
+              onKeyPress={(e) => handleKeyPress(e, handleSearch)}
+              placeholder="Ex: 123"
+              className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+              disabled={loading}
+            />
+          </div>
+        )}
+
+        {/* Seletor de Serviço */}
+        {step !== "cep" && (
+          <div>
+            <label htmlFor="service-select" className="block text-sm font-semibold text-gray-700 mb-2">
+              Serviço Desejado *
+            </label>
+            <select
+              id="service-select"
+              value={serviceType}
+              onChange={(e) => setServiceType(e.target.value)}
+              className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:ring-0 transition-colors"
+              disabled={loading}
+            >
+              {SERVICE_TYPES.map((service) => (
+                <option key={service.value} value={service.value}>
+                  {service.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Botão de Busca */}
+        {step !== "cep" && (
+          <button
+            onClick={handleSearch}
+            disabled={loading || !addressData || !numberValue.trim()}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 transform hover:scale-[1.02] disabled:transform-none disabled:cursor-not-allowed shadow-lg"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Buscando...
+              </div>
+            ) : (
+              "🔍 Buscar Serviços"
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import path from "path";
 import db from "./database/database";
 import { runMigrations } from "./database/migrations/migrate";
 import viaCepRoutes from "./routes/viacepRoutes";
+import cataBagulhoRoutes from "./routes/cataBagulhoRoutes"; // <
 
 // Carrega variáveis de ambiente
 dotenv.config({
@@ -139,6 +140,8 @@ async function startServer() {
 
     // Registrar rotas do ViaCEP
     app.use("/api", viaCepRoutes);
+    app.use("/api", cataBagulhoRoutes);
+
 
     // CORRIGIDO: Middleware para rotas não encontradas - removido o "*"
     app.use((req, res) => {
