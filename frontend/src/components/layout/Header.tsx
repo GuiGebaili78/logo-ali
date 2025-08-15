@@ -1,57 +1,34 @@
-"use client";
+import Link from "next/link";
 
-import React from "react";
-import { useRouter } from "next/navigation";
-
-export default function Header() {
-  const router = useRouter();
-
-  const handleLogoClick = () => {
-    router.push("/");
-  };
-
+export function Header() {
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div 
-            className="flex items-center cursor-pointer"
-            onClick={handleLogoClick}
-          >
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">L</span>
-              </div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                LogoAli
-              </h1>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <button
-              onClick={handleLogoClick}
+    <header className="bg-white shadow-sm border-b">
+      <div className="container mx-auto px-4 py-4">
+        <nav className="flex items-center justify-between">
+          <Link href="/" className="flex items-center space-x-2">
+            <span className="text-2xl font-bold text-blue-600">🏢</span>
+            <span className="text-xl font-bold text-gray-900">Logo Ali</span>
+          </Link>
+          
+          <div className="hidden md:flex items-center space-x-6">
+            <Link 
+              href="/" 
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               Início
-            </button>
-            <a
-              href="#sobre"
+            </Link>
+            <Link 
+              href="/servicos" 
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
-              Sobre
-            </a>
-            <a
-              href="#contato"
-              className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
-            >
-              Contato
-            </a>
-          </nav>
+              Serviços
+            </Link>
+            <div className="text-sm text-gray-500">
+              São Paulo, SP
+            </div>
+          </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile menu button */}
           <div className="md:hidden">
             <button className="text-gray-700 hover:text-blue-600">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +36,7 @@ export default function Header() {
               </svg>
             </button>
           </div>
-        </div>
+        </nav>
       </div>
     </header>
   );

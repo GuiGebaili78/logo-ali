@@ -42,10 +42,7 @@ export const SERVICE_ICONS = {
 
 const isServer = typeof window === "undefined";
 
+// A URL do backend é a única necessária para as chamadas de API
 export const API_ENDPOINTS = {
-  VIACEP: "https://viacep.com.br/ws",
-  NOMINATIM: "https://nominatim.openstreetmap.org/search",
-  BACKEND_BASE: isServer
-    ? "http://logo-ali-back:3333/api" // URL para comunicação entre containers
-    : "/api", // URL relativa para o navegador (proxy reverso)
+  BACKEND_BASE: "/api", // URL relativa para o navegador (proxy reverso do Next.js)
 };

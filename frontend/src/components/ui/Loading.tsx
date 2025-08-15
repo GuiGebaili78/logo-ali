@@ -1,38 +1,28 @@
-import React from "react";
 
-interface Props {
-  size?: number;
-  text?: string;
+// frontend/src/components/ui/Loading.tsx
+interface LoadingProps {
+  size?: "sm" | "md" | "lg";
+  color?: "blue" | "white" | "gray";
 }
 
-export default function Loading({ size = 36, text = "Carregando..." }: Props) {
+export function Loading({ size = "md", color = "blue" }: LoadingProps) {
+  const sizeClasses = {
+    sm: "w-4 h-4",
+    md: "w-8 h-8",
+    lg: "w-12 h-12",
+  };
+
+  const colorClasses = {
+    blue: "border-blue-600",
+    white: "border-white",
+    gray: "border-gray-600",
+  };
+
   return (
-    <div className="flex items-center gap-3">
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 50 50"
-        className="animate-spin"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle
-          cx="25"
-          cy="25"
-          r="20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="4"
-          strokeOpacity="0.15"
-        />
-        <path
-          d="M45 25a20 20 0 00-20-20"
-          stroke="currentColor"
-          strokeWidth="4"
-          strokeLinecap="round"
-          fill="none"
-        />
-      </svg>
-      <span className="text-sm">{text}</span>
+    <div className="flex items-center justify-center">
+      <div
+        className={`animate-spin rounded-full border-2 border-t-transparent ${sizeClasses[size]} ${colorClasses[color]}`}
+      />
     </div>
   );
 }

@@ -1,109 +1,102 @@
 // frontend/src/components/ui/Button.tsx
-"use client";
+import { ReactNode, ButtonHTMLAttributes } from "react";
 
-import React from "react";
-
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline";
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  children: ReactNode;
+  variant?: "primary" | "secondary" | "danger";
   size?: "sm" | "md" | "lg";
-  children: React.ReactNode;
 }
 
-export default function Button({ 
-  variant = "primary", 
-  size = "md", 
-  className = "", 
-  children, 
-  ...props 
+export function Button({
+  children,
+  variant = "primary",
+  size = "md",
+  className = "",
+  ...props
 }: ButtonProps) {
-  const baseStyles = "font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseClasses = "font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
   
-  const variants = {
-    primary: "bg-accent-color text-white hover:bg-accent-color/90 focus:ring-accent-color",
-    secondary: "bg-secondary-color text-light-color hover:bg-secondary-color/90 focus:ring-secondary-color",
-    outline: "border-2 border-accent-color text-accent-color hover:bg-accent-color hover:text-white focus:ring-accent-color"
+  const variantClasses = {
+    primary: "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500 disabled:bg-gray-400",
+    secondary: "bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500",
+    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
   };
 
-  const sizes = {
+  const sizeClasses = {
     sm: "px-3 py-1.5 text-sm",
-    md: "px-4 py-2 text-base",
-    lg: "px-6 py-3 text-lg"
+    md: "px-4 py-2",
+    lg: "px-6 py-3 text-lg",
   };
+
+  const classes = [
+    baseClasses,
+    variantClasses[variant],
+    sizeClasses[size],
+    className,
+  ].join(" ");
 
   return (
-    <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-      {...props}
-    >
+    <button className={classes} {...props}>
       {children}
     </button>
   );
 }
 
 // frontend/src/components/ui/Input.tsx
-"use client";
+import { InputHTMLAttributes, forwardRef } from "react";
 
-import React from "react";
-
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-export default function Input({ 
-  label, 
-  error, 
-  className = "", 
-  ...props 
-}: InputProps) {
-  const baseStyles = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-color focus:border-transparent transition-all duration-200";
-  const errorStyles = error ? "border-red-500 focus:ring-red-500" : "";
-  const disabledStyles = props.disabled ? "bg-gray-100 cursor-not-allowed" : "";
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className = "", error, ...props }, ref) => {
+    const baseClasses = "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors";
+    const errorClasses = error ? "border-red-500 focus:ring-red-500" : "border-gray-300";
+    
+    const classes = [baseClasses, errorClasses, className].join(" ");
 
-  return (
-    <div className="w-full">
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
-      )}
-      <input
-        className={`${baseStyles} ${errorStyles} ${disabledStyles} ${className}`}
-        {...props}
-      />
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-    </div>
-  );
-}
+    return (
+      <div className="w-full">
+        <input
+          ref={ref}
+          className={classes}
+          {...props}
+        />
+        {error && (
+          <p className="mt-1 text-sm text-red-600">{error}</p>
+        )}
+      </div>
+    );
+  }
+);
+
+Input.displayName = "Input";
 
 // frontend/src/components/ui/Loading.tsx
-"use client";
-
-import React from "react";
-
 interface LoadingProps {
   size?: "sm" | "md" | "lg";
-  text?: string;
-  className?: string;
+  color?: "blue" | "white" | "gray";
 }
 
-export default function Loading({ 
-  size = "md", 
-  text, 
-  className = "" 
-}: LoadingProps) {
-  const sizes = {
-    sm: "h-4 w-4",
-    md: "h-6 w-6", 
-    lg: "h-8 w-8"
+export function Loading({ size = "md", color = "blue" }: LoadingProps) {
+  const sizeClasses = {
+    sm: "w-4 h-4",
+    md: "w-8 h-8",
+    lg: "w-12 h-12",
+  };
+
+  const colorClasses = {
+    blue: "border-blue-600",
+    white: "border-white",
+    gray: "border-gray-600",
   };
 
   return (
-    <div className={`flex items-center justify-center ${className}`}>
-      <div className={`animate-spin rounded-full border-2 border-accent-color border-t-transparent ${sizes[size]}`} />
-      {text && <span className="ml-2 text-gray-600">{text}</span>}
+    <div className="flex items-center justify-center">
+      <div
+        className={`animate-spin rounded-full border-2 border-t-transparent ${sizeClasses[size]} ${colorClasses[color]}`}
+      />
     </div>
   );
 }

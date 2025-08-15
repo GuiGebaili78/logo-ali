@@ -1,34 +1,31 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppProvider } from "@/context/AppContext";
-
-// Supondo que você tenha ou criará esses componentes de layout
-const Header = () => <header className="p-4 bg-[var(--secondary-color)] text-center"><h1 className="text-xl font-bold">LogoAli</h1></header>;
-const Footer = () => <footer className="p-4 bg-[var(--secondary-color)] text-center text-sm"><p>© 2024 LogoAli. Todos os direitos reservados.</p></footer>;
-
 
 export const metadata: Metadata = {
-  title: "LogoAli - Serviços Públicos SP",
-  description: "Encontre serviços públicos em São Paulo de forma fácil.",
+  title: "Logo Ali - Serviços Públicos SP",
+  description: "Encontre serviços públicos de São Paulo próximos ao seu endereço",
+  keywords: ["São Paulo", "serviços públicos", "cata-bagulho", "coleta de lixo", "zeladoria"],
+  authors: [{ name: "Logo Ali Team" }],
+  viewport: "width=device-width, initial-scale=1",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="pt-BR">
-      <body>
-        <AppProvider>
-          <div className="flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-grow container mx-auto p-4">
-              {children}
-            </main>
-            <Footer />
-          </div>
-        </AppProvider>
+      <head>
+        <link 
+          rel="stylesheet" 
+          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossOrigin=""
+        />
+      </head>
+      <body className="antialiased">
+        {children}
       </body>
     </html>
   );

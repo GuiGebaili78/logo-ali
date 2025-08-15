@@ -1,28 +1,23 @@
+// --- Caminho: backend/src/services/cataBagulhoService.ts ---
 import axios from "axios";
 import * as cheerio from "cheerio";
 import db from "../database/database";
-import { CataBagulhoResult, CataBagulhoCacheData } from "../types/cataBagulho";
+import { CataBagulhoResult } from "../types/cataBagulho";
 
 export class CataBagulhoService {
   private readonly BASE_URL = "https://locatsp.saclimpeza2.com.br/mapa/resultados/";
   private readonly CACHE_TTL_HOURS = 24;
 
-  /**
-   * Método principal que orquestra a busca, utilizando cache.
-   */
   public async search(lat: number, lng: number): Promise<CataBagulhoResult[]> {
-    // 1. Tenta buscar do cache
     const cachedResults = await this.getCachedResults(lat, lng);
     if (cachedResults) {
       console.log(`✅ [Cata-Bagulho] Cache HIT para coordenadas: ${lat}, ${lng}`);
       return cachedResults;
     }
 
-    // 2. Se não houver cache, busca na fonte original (web scraping)
     console.log(`❌ [Cata-Bagulho] Cache MISS. Buscando na fonte externa...`);
     const liveResults = await this.fetchFromSource(lat, lng);
 
-    // 3. Salva os novos resultados no cache
     if (liveResults.length > 0) {
       await this.cacheResults(lat, lng, liveResults);
     }
@@ -30,9 +25,6 @@ export class CataBagulhoService {
     return liveResults;
   }
 
-  /**
-   * Busca resultados no cache do banco de dados que não tenham expirado.
-   */
   private async getCachedResults(lat: number, lng: number): Promise<CataBagulhoResult[] | null> {
     try {
       const query = `
@@ -40,22 +32,17 @@ export class CataBagulhoService {
         WHERE latitude = $1 AND longitude = $2 AND expires_at > NOW()
         LIMIT 1;
       `;
-      // Arredondar para evitar problemas de precisão com float
       const result = await db.query(query, [lat.toFixed(8), lng.toFixed(8)]);
-
       if (result.rows.length > 0) {
         return result.rows[0].results as CataBagulhoResult[];
       }
       return null;
     } catch (error) {
       console.error("Erro ao buscar resultados do cache Cata-Bagulho:", error);
-      return null; // Em caso de erro, continua para a busca externa
+      return null;
     }
   }
 
-  /**
-   * Salva os resultados da busca no banco de dados.
-   */
   private async cacheResults(lat: number, lng: number, results: CataBagulhoResult[]): Promise<void> {
     try {
       const expiresAt = new Date();
@@ -78,9 +65,6 @@ export class CataBagulhoService {
     }
   }
 
-  /**
-   * Lógica de web scraping original.
-   */
   private async fetchFromSource(lat: number, lng: number): Promise<CataBagulhoResult[]> {
     const url = `${this.BASE_URL}?servico=grandes-objetos&lat=${lat}&lng=${lng}`;
     console.log(`[Cata-Bagulho] Buscando dados em: ${url}`);
@@ -92,7 +76,6 @@ export class CataBagulhoService {
         },
         timeout: 15000,
       });
-
       return this.parseHTML(data);
     } catch (error: any) {
       console.error("[Cata-Bagulho] Erro no serviço de scraping:", error.message);
@@ -104,33 +87,45 @@ export class CataBagulhoService {
     const $ = cheerio.load(html);
     const results: CataBagulhoResult[] = [];
 
-    const resultItems = $("body").find("div[style='padding:10px']");
-
-    if (resultItems.length === 0) {
-      console.log("[Cata-Bagulho] Nenhum item de resultado encontrado no HTML.");
-      return [];
-    }
-
-    resultItems.each((_, element) => {
-      const street = $(element).find("b").first().text().trim();
+    // O seletor correto para cada bloco de resultado
+    $('.panel.panel-default').each((_, element) => {
+      const logradouroDiv = $(element).find('.logradouro');
+      const street = logradouroDiv.find('strong').text().trim();
+      
       if (!street) return; // Pula se não encontrar o nome da rua
 
-      const infoText = $(element).text();
-      const extractInfo = (regex: RegExp): string => {
-        const match = infoText.match(regex);
-        return match ? match[1].trim() : "Não informado";
+      // Extrai o conteúdo de texto do div e remove o nome da rua para pegar os trechos
+      const logradouroHtml = logradouroDiv.html() || '';
+      const parts = logradouroHtml.split('<br>').map(part => cheerio.load(part).text().trim());
+      
+      const startStretch = parts.find(p => p.startsWith('Início:'))?.replace('Início:', '').trim() || 'Não informado';
+      const endStretch = parts.find(p => p.startsWith('Fim:'))?.replace('Fim:', '').trim() || 'Não informado';
+
+      const detailsDiv = $(element).find('.detalhes');
+      
+      const extractDetail = (label: string): string => {
+        return detailsDiv.find('.row').filter(function() {
+          return $(this).find('.col-xs-3, .col-xs-4, .col-xs-5').text().trim() === label;
+        }).find('.col-xs-9, .col-xs-8, .col-xs-7').text().trim() || 'Não informado';
       };
+
+      const datesText = extractDetail('Dias:');
+      const dates = datesText.split(';').map(d => d.trim()).filter(d => d);
 
       results.push({
         street: street,
-        startStretch: extractInfo(/Trecho de Coleta: Início em (.*?)(?= Fim)/),
-        endStretch: extractInfo(/Fim em (.*?)\n/),
-        dates: [extractInfo(/Datas: (.*?)\n/)],
-        frequency: extractInfo(/Frequência: (.*?)\n/),
-        shift: extractInfo(/Turno: (.*?)\n/),
-        schedule: extractInfo(/Horário: (.*?)\n/),
+        startStretch: startStretch,
+        endStretch: endStretch,
+        dates: dates,
+        frequency: extractDetail('Freq.:'),
+        shift: extractDetail('Turno:'),
+        schedule: extractDetail('Horário:'),
       });
     });
+
+    if (results.length === 0) {
+        console.log("[Cata-Bagulho] Nenhum item de resultado encontrado no HTML com os seletores esperados.");
+    }
 
     return results;
   }

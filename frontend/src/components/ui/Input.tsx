@@ -1,25 +1,30 @@
-import React from "react";
+// frontend/src/components/ui/Input.tsx
+import { InputHTMLAttributes, forwardRef } from "react";
 
-interface Props extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string | null;
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  error?: string;
 }
 
-export default function Input({
-  label,
-  error,
-  className = "",
-  ...rest
-}: Props) {
-  return (
-    <div className={`flex flex-col gap-1 ${className}`}>
-      {label && <label className="text-sm font-medium">{label}</label>}
-      <input
-        {...rest}
-        className="px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-accent-color"
-        style={{ borderColor: "var(--secondary-color)" }}
-      />
-      {error && <span className="text-xs text-red-600">{error}</span>}
-    </div>
-  );
-}
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className = "", error, ...props }, ref) => {
+    const baseClasses = "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors";
+    const errorClasses = error ? "border-red-500 focus:ring-red-500" : "border-gray-300";
+    
+    const classes = [baseClasses, errorClasses, className].join(" ");
+
+    return (
+      <div className="w-full">
+        <input
+          ref={ref}
+          className={classes}
+          {...props}
+        />
+        {error && (
+          <p className="mt-1 text-sm text-red-600">{error}</p>
+        )}
+      </div>
+    );
+  }
+);
+
+Input.displayName = "Input";
