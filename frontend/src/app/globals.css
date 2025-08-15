@@ -3,164 +3,9 @@
 
 
 
-
-:root {
-  --primary-color: #222831;
-  --secondary-color: #393E46;
-  --accent-color: #00ADB5;
-  --light-color: #EEEEEE;
-}
-
-* {
-  font-family: 'Roboto', sans-serif;
-}
-
-body {
-  background-color: var(--primary-color);
-  color: var(--light-color);
-  font-family: 'Roboto', sans-serif;
-}
-
-/* Custom CSS Classes */
-.bg-primary {
-  background-color: var(--primary-color);
-}
-
-.bg-secondary {
-  background-color: var(--secondary-color);
-}
-
-.bg-accent {
-  background-color: var(--accent-color);
-}
-
-.bg-light {
-  background-color: var(--light-color);
-}
-
-.text-primary {
-  color: var(--primary-color);
-}
-
-.text-secondary {
-  color: var(--secondary-color);
-}
-
-.text-accent {
-  color: var(--accent-color);
-}
-
-.text-light {
-  color: var(--light-color);
-}
-
-.border-primary {
-  border-color: var(--primary-color);
-}
-
-.border-accent {
-  border-color: var(--accent-color);
-}
-
-/* Loading spinner */
-.spinner {
-  border: 2px solid var(--light-color);
-  border-top: 2px solid var(--accent-color);
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-/* Map styles */
-.map-container {
-  height: 400px;
-  border-radius: 12px;
-  z-index: 1;
-}
-
-/* Service item animations */
-.service-item {
-  transition: all 0.3s ease;
-}
-
-.service-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 173, 181, 0.15);
-}
-
-/* Modal styles */
-.modal-overlay {
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-.modal-content {
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* Autocomplete styles */
-.autocomplete-list {
-  max-height: 200px;
-  overflow-y: auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.autocomplete-item:hover {
-  background-color: var(--accent-color);
-  color: white;
-}
-
-/* Leaflet map styles */
-.leaflet-container {
-  height: 100%;
-  width: 100%;
-  border-radius: 12px;
-}
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
-
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -171,7 +16,60 @@ body {
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
+  background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Leaflet CSS overrides */
+.leaflet-container {
+  height: 400px;
+  width: 100%;
+  z-index: 1;
+}
+
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: white !important;
+  color: #333 !important;
+  border: 1px solid #ccc !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #f4f4f4 !important;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Card hover effects */
+.service-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
